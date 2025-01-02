@@ -25,7 +25,8 @@ rule to_spatialdata:
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     resources:
         mem_mb=128_000,
     params:
@@ -44,7 +45,8 @@ checkpoint patchify_cellpose:
     params:
         args_patchify = str(args["patchify"].where(contains="pixel")),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     shell:
         """
         sopa patchify image {paths.sdata_path} {params.args_patchify}
@@ -62,7 +64,8 @@ checkpoint patchify_baysor:
         args_baysor = args.dump_baysor_patchify() if args.baysor else "",
         arg_prior = "--use-prior" if args.cellpose else "",
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     shell:
         """
         sopa patchify baysor {paths.sdata_path} {params.args_patchify} {params.args_baysor} {params.arg_prior}
@@ -87,7 +90,8 @@ checkpoint patchify_comseg:
         args_comseg = args.dump_comseg_patchify() if args.comseg else "",
         arg_prior = "--use-prior" if args.cellpose else "",
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     shell:
         """
         sopa patchify comseg {paths.sdata_path} {params.args_patchify} {params.args_comseg} {params.arg_prior}
@@ -100,7 +104,8 @@ rule patch_segmentation_cellpose:
     output:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     params:
         args_cellpose = str(args["segmentation"]["cellpose"]),
     shell:
@@ -116,6 +121,7 @@ rule patch_segmentation_baysor:
         paths.smk_baysor_temp_dir / "{index}" / "segmentation_counts.loom",
     params:
         args_baysor_prior_seg = args.baysor_prior_seg,
+    threads: 16
     resources:
         mem_mb=128_000,
     shell:
@@ -142,7 +148,8 @@ rule patch_segmentation_comseg:
         paths.smk_comseg_temp_dir / "{index}" / "segmentation_polygons.json",
         paths.smk_comseg_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     resources:
         mem_mb=128_000,
     shell:
@@ -162,7 +169,8 @@ rule resolve_cellpose:
     output:
         touch(paths.smk_cellpose_boundaries),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     shell:
         """
         sopa resolve cellpose {paths.sdata_path} --patch-dir {paths.smk_cellpose_temp_dir}
@@ -176,7 +184,8 @@ rule resolve_baysor:
         touch(paths.smk_baysor_boundaries),
         touch(paths.smk_table),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     params:
         args_patches_dirs = lambda _, input: " ".join(f"--patches-dirs {directory}" for directory in input.dirs),
         args_min_area = args.min_area("baysor"),
@@ -195,7 +204,8 @@ rule resolve_comseg:
         touch(paths.smk_comseg_boundaries),
         touch(paths.smk_table),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     params:
         args_patches_dirs=lambda _, input: " ".join(f"--patches-dirs {directory}" for directory in input.dirs),
         args_min_area=args.min_area("comseg"),
@@ -222,7 +232,8 @@ rule aggregate:
     output:
         touch(paths.smk_aggregation),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     params:
         args_aggregate = str(args["aggregate"] or ""),
     resources:
@@ -238,15 +249,17 @@ rule annotate:
     output:
         directory(paths.annotations),
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 1
     resources:
-        partition="gpgpuq" if args['annotation']['method'] == "tangram" else "shortq",
-        gpu="a100:1" if args['annotation']['method'] == "tangram" else 0,
+        queue="gpu -R 'a100' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
     params:
         method_name = args['annotation']['method'],
         args_annotation = str(args['annotation']['args']),
     shell:
         """
+        ml cuda
+        ml cudnn
         sopa annotate {params.method_name} {paths.sdata_path} {params.args_annotation}
         """
 
@@ -256,10 +269,10 @@ rule image_write:
     output:
         paths.explorer_image,
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     resources:
         mem_mb=64_000,
-        partition="longq"
     params:
         args_explorer = str(args["explorer"].where(keys=['lazy', 'ram_threshold_gb', 'pixel_size', 'pixelsize'])),
     shell:
@@ -275,7 +288,8 @@ rule report:
     output:
         paths.report,
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     shell:
         """
         sopa report {paths.sdata_path} {paths.report}
@@ -289,7 +303,8 @@ rule explorer:
     output:
         paths.explorer_experiment,
     conda:
-        "sopa"
+        "envs/sopa.yaml"
+    threads: 16
     resources:
         mem_mb=256_000,
     params:
