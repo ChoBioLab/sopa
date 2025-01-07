@@ -7,10 +7,6 @@ from pathlib import Path
 import sys
 from typing import List, Optional
 import shutil
-import pandas as pd
-import pyarrow.parquet as pq
-import zarr
-import numpy as np
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
@@ -84,65 +80,6 @@ def copy_workflow_to_scratch(workflow_path: Path, sample_name: str) -> Path:
     logger.info("Workflow copy completed successfully")
 
     return target_dir
-
-
-def backup_original_files(data_path: Path) -> Path:
-    """Create backup of original transcript files."""
-    logger.info("Creating backup of original transcript files")
-    backup_dir = data_path / "original_transcripts"
-    backup_dir.mkdir(exist_ok=True)
-
-    for file_name in ["transcripts.csv.gz", "transcripts.parquet", "transcripts.zarr.zip"]:
-        src = data_path / file_name
-        if src.exists():
-            logger.info(f"Backing up {file_name}")
-            shutil.copy2(src, backup_dir / file_name)
-
-    return backup_dir
-
-
-def filter_and_save_csv(data_path: Path) -> None:
-    """Filter and save CSV data."""
-    logger.info("Processing CSV file")
-    csv_path = data_path / "transcripts.csv.gz"
-    df = pd.read_csv(csv_path)
-    filtered_df = df[df['qv'] >= 20]
-    filtered_df.to_csv(csv_path, index=False, compression='gzip')
-
-
-def filter_and_save_parquet(data_path: Path) -> None:
-    """Filter and save Parquet data."""
-    logger.info("Processing Parquet file")
-    parquet_path = data_path / "transcripts.parquet"
-    table = pq.read_table(parquet_path)
-    df = table.to_pandas()
-    filtered_df = df[df['qv'] >= 20]
-    filtered_df.to_parquet(parquet_path, index=False)
-
-
-def process_transcript_files(sample_dir: Path) -> None:
-    """Process all transcript files with qv filtering."""
-    logger.info(f"Processing transcript files in {sample_dir}")
-
-    # Backup original files
-    backup_dir = backup_original_files(sample_dir)
-
-    try:
-        # Process each file type
-        filter_and_save_csv(sample_dir)
-        filter_and_save_parquet(sample_dir)
-        #filter_and_save_zarr(sample_dir)
-
-        logger.info("Successfully filtered all transcript files")
-    except Exception as e:
-        logger.error(f"Error during filtering: {str(e)}")
-        # Restore from backup
-        logger.info("Restoring from backup")
-        for file_name in ["transcripts.csv.gz", "transcripts.parquet", "transcripts.zarr.zip"]:
-            src = backup_dir / file_name
-            if src.exists():
-                shutil.copy2(src, sample_dir / file_name)
-        raise
 
 
 def create_lsf_script(
@@ -276,9 +213,6 @@ def main() -> None:
     for sample_dir in sample_dirs:
         sample_name = parse_sample_name(sample_dir.name)
         logger.info(f"Processing sample: {sample_name}")
-
-        # Add the new filtering step
-        process_transcript_files(sample_dir)
 
         scratch_workflow_path = os.path.join(copy_workflow_to_scratch(
             sopa_source_path,
