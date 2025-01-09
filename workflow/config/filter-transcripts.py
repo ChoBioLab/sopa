@@ -8,6 +8,8 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
 import argparse
+import subprocess
+import sys
 
 # Set up logging
 logging.basicConfig(
@@ -15,6 +17,40 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def run_validation(filtered_dir: Path) -> bool:
+    """Run validation script on processed directory."""
+    validation_script = Path(__file__).parent / "validate_transcripts.py"
+
+    if not validation_script.exists():
+        logger.error(f"Validation script not found: {validation_script}")
+        return False
+
+    logger.info(f"Running validation on: {filtered_dir}")
+    try:
+        # Call validation script with the filtered directory as an argument
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(validation_script),
+                "--filtered-dir", str(filtered_dir)
+            ],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            logger.error(f"Validation failed for {filtered_dir}")
+            logger.error(f"Validation output:\n{result.stderr}")
+            return False
+
+        logger.info(f"Validation output:\n{result.stdout}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error running validation: {str(e)}")
+        return False
 
 
 def filter_and_save_csv(source_path: Path, target_path: Path, dry_run: bool = False) -> None:
@@ -71,6 +107,14 @@ def process_run_directory(run_dir: Path, dry_run: bool = False) -> None:
         else:
             logger.info(f"Successfully processed: {run_dir}")
 
+            # Run validation after processing
+            if not run_validation(filtered_dir):
+                logger.error(f"Validation failed for {run_dir}")
+                # Optionally, clean up if validation fails
+                if not dry_run and filtered_dir.exists():
+                    logger.warning(f"Cleaning up failed directory: {filtered_dir}")
+                    shutil.rmtree(filtered_dir)
+
     except Exception as e:
         logger.error(f"Error processing {run_dir}: {str(e)}")
         # Clean up if there was an error and not in dry run mode
@@ -113,6 +157,11 @@ def main():
         type=str,
         default="/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs",
         help='Base directory containing Xenium runs'
+    )
+    parser.add_argument(
+        '--skip-validation',
+        action='store_true',
+        help='Skip validation after processing'
     )
     args = parser.parse_args()
 

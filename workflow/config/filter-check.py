@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import pandas as pd
 import pyarrow.parquet as pq
 import gzip
@@ -7,6 +9,7 @@ import numpy as np
 import logging
 from datetime import datetime
 import sys
+
 
 def setup_logger(log_dir: Path) -> logging.Logger:
     """Setup logger with both file and console handlers."""
@@ -38,6 +41,7 @@ def setup_logger(log_dir: Path) -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
+
 
 def analyze_csv_in_chunks(file_path: Path, logger: logging.Logger, chunk_size: int = 1_000_000) -> Dict:
     """Analyze CSV file in chunks to avoid memory issues."""
@@ -74,6 +78,7 @@ def analyze_csv_in_chunks(file_path: Path, logger: logging.Logger, chunk_size: i
 
     return metrics
 
+
 def analyze_parquet(file_path: Path, logger: logging.Logger) -> Dict:
     """Analyze Parquet file using PyArrow for memory efficiency."""
     metrics = {
@@ -106,6 +111,7 @@ def analyze_parquet(file_path: Path, logger: logging.Logger) -> Dict:
         raise
 
     return metrics
+
 
 def validate_filtered_transcripts(filtered_dir: Path, logger: logging.Logger) -> Dict:
     """Validate transcript files."""
@@ -172,10 +178,19 @@ def validate_filtered_transcripts(filtered_dir: Path, logger: logging.Logger) ->
 
     return metrics
 
+
 def main():
     """Main function to run the validation."""
-    filtered_dir = Path("/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs/TUQ97N/CHO-001/output-XETG00189__0010663__50452C-TUQ97N-EA__20240126__205019/qv20-filtered-transcripts")
+    parser = argparse.ArgumentParser(description='Validate filtered transcript data')
+    parser.add_argument(
+        '--filtered-dir',
+        type=str,
+        required=True,
+        help='Path to the qv20-filtered-transcripts directory'
+    )
+    args = parser.parse_args()
 
+    filtered_dir = Path(args.filtered_dir)
     log_dir = filtered_dir / "validation_logs"
     logger = setup_logger(log_dir)
 
@@ -192,6 +207,6 @@ def main():
         logger.error(f"\nValidation process failed: {str(e)}")
         raise
 
+
 if __name__ == "__main__":
     main()
-
