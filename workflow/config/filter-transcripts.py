@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def run_validation(filtered_dir: Path) -> bool:
     """Run validation script on processed directory."""
-    validation_script = Path(__file__).parent / "validate_transcripts.py"
+    validation_script = Path(__file__).parent / "validate-transcripts.py"
 
     if not validation_script.exists():
         logger.error(f"Validation script not found: {validation_script}")
