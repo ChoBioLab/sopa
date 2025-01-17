@@ -253,6 +253,7 @@ rule annotate:
     threads: 1
     resources:
         queue="gpu -R 'a100' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
+        mem_mb=192_000,
     params:
         method_name = args['annotation']['method'],
         args_annotation = str(args['annotation']['args']),
