@@ -1,0 +1,6 @@
+name: sopa
+channels:
+  - conda-forge
+  - defaults
+prefix: /sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa
+
