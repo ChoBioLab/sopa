@@ -97,7 +97,7 @@ def create_lsf_script(
 
     script_content = f"""#BSUB -J sopa-{sample_name}
 #BSUB -P acc_untreatedIBD
-#BSUB -W 48:00
+#BSUB -W 24:00
 #BSUB -q {queue}
 #BSUB -n 8
 #BSUB -R span[hosts=1]
