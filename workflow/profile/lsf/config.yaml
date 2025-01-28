@@ -1,19 +1,16 @@
-# Warning: this profile is still experimental.
+lsf:
+  project: acc_untreatedIBD  # Default project for all jobs
+  queue: premium             # Default queue
+  __default__:
+    runtime: 60              # Default runtime in minutes
+    mem_mb: 4096             # Default memory
+  resources:
+    - "queue=queue"          # Map resource param to LSF -q
+    - "project=project"      # Map resource param to LSF -P
+  output: "logs/%(jobid)s.out"
+  error: "logs/%(jobid)s.err"
+  jobname: "smk.%(rulename)s.%(jobid)s"
+  extras: |
+    -J smk.%(rulename)s.%(jobid)s
+    -cwd
 
-executor: lsf
-default-resources:
-    mem_mb: 8_000 # default rules memory in MB (you can keep this value)
-    gpu: 0
-
-# other options (you can keep the default values)
-restart-times: 0
-max-jobs-per-second: 100
-max-status-checks-per-second: 1
-local-cores: 1
-latency-wait: 60
-jobs: 50
-keep-going: True
-rerun-incomplete: True
-printshellcmds: True
-scheduler: greedy
-use-conda: True

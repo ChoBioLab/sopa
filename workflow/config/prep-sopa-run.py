@@ -10,7 +10,7 @@ import shutil
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
-DEFAULT_CONDA_ENV = "/sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa"
+DEFAULT_CONDA_ENV = "/sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa2"
 DEFAULT_SOPA_SOURCE = "/sc/arion/projects/untreatedIBD/cache/tools/sopa"
 DEFAULT_QUEUE = "premium"
 BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs"
@@ -130,8 +130,7 @@ snakemake \\
   --config data_path=$DATA_PATH \\
   --configfile=$SOPA_CONFIG_FILE \\
   --use-conda \\
-  --profile lsf \\
-  --resources mem_mb=15000000
+  --profile profile/lsf
 """
 
     logger.info(f"Writing LSF script to: {output_file}")

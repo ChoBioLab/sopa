@@ -4,8 +4,6 @@ config = validate_config(config) # validate the Snakemake config
 paths = WorkflowPaths(config) # object handling the paths to the files that will be created
 args = Args(paths, config) # object handling the arguments passed to the workflow
 
-localrules: all
-
 rule all:
     input:
         paths.annotations if args.annotate else [],
@@ -30,7 +28,7 @@ rule to_spatialdata:
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=128_000,
@@ -49,7 +47,7 @@ rule tissue_segmentation:
     output:
         touch(paths.smk_tissue_segmentation),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
@@ -70,7 +68,7 @@ checkpoint patchify_image:
         patchify_image = args["patchify"].as_cli(contains="pixel"),
         sdata_path = paths.sdata_path,
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     shell:
         """
@@ -89,7 +87,7 @@ checkpoint patchify_transcripts:
         patchify_transcripts = args.patchify_transcripts(),
         sdata_path = paths.sdata_path,
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     shell:
         """
@@ -103,7 +101,7 @@ rule patch_segmentation_cellpose:
     output:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
@@ -119,7 +117,7 @@ rule patch_segmentation_baysor:
     output:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=128_000,
@@ -129,6 +127,7 @@ rule patch_segmentation_baysor:
         sdata_path = paths.sdata_path,
     shell:
         """
+	alias baysor='/hpc/users/tastac01/bin/baysor/bin/baysor'
         if command -v module &> /dev/null; then
             module purge
         fi
@@ -143,7 +142,7 @@ rule patch_segmentation_comseg:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_polygons.json",
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=128_000,
@@ -168,7 +167,7 @@ rule resolve_cellpose:
     output:
         touch(paths.smk_cellpose_boundaries),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     params:
         sdata_path = paths.sdata_path,
@@ -184,7 +183,7 @@ rule resolve_baysor:
         touch(paths.smk_baysor_boundaries),
         touch(paths.smk_table),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     params:
         resolve = args.resolve_transcripts(),
@@ -192,6 +191,7 @@ rule resolve_baysor:
         smk_transcripts_temp_dir = paths.smk_transcripts_temp_dir,
     shell:
         """
+	alias baysor='/hpc/users/tastac01/bin/baysor/bin/baysor'
         sopa resolve baysor {params.sdata_path} {params.resolve}
 
         rm -r {params.smk_transcripts_temp_dir}    # cleanup large baysor files
@@ -204,7 +204,7 @@ rule resolve_comseg:
         touch(paths.smk_comseg_boundaries),
         touch(paths.smk_table),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     params:
         resolve = args.resolve_transcripts(),
@@ -233,7 +233,7 @@ rule aggregate:
     output:
         touch(paths.smk_aggregation),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=64_000,
@@ -251,7 +251,7 @@ rule annotate:
     output:
         directory(paths.annotations),
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 1
     resources:
         queue="gpu -R 'a100' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
@@ -273,7 +273,7 @@ rule image_write:
     output:
         paths.explorer_image,
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=64_000,
@@ -298,7 +298,7 @@ rule report:
         sdata_path = paths.sdata_path,
         report = paths.report,
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     shell:
         """
@@ -313,7 +313,7 @@ rule explorer:
     output:
         paths.explorer_experiment,
     conda:
-        "envs/sopa.yaml"
+        "envs/sopa2.yaml"
     threads: 16
     resources:
         mem_mb=256_000,
