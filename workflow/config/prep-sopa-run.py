@@ -91,6 +91,12 @@ def setup_transcript_directories(data_path: Path) -> None:
     original_transcripts_dir = data_path / "original-transcripts"
     original_transcripts_dir.mkdir(exist_ok=True)
 
+    # Check if original-transcripts already contains transcript files
+    existing_transcripts = list(original_transcripts_dir.glob("transcripts.*"))
+    if existing_transcripts:
+        logger.warning(f"Found existing transcript files in {original_transcripts_dir}. Skipping file movement to prevent overwriting.")
+        return
+
     # Move all transcripts.* files from data_path to original-transcripts
     for transcript_file in data_path.glob("transcripts.*"):
         if transcript_file.is_file():
