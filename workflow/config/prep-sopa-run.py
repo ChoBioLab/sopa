@@ -94,9 +94,28 @@ def setup_transcript_directories(data_path: Path) -> None:
     # Check if original-transcripts already contains transcript files
     existing_transcripts = list(original_transcripts_dir.glob("transcripts.*"))
     if existing_transcripts:
-        logger.warning(f"Found existing transcript files in {original_transcripts_dir}. Skipping file movement to prevent overwriting.")
+        logger.info("Found existing transcript files in original-transcripts. Checking filtered transcripts...")
+
+        # Ensure data_path transcripts match qv20-filtered-transcripts
+        filtered_dir = data_path / "qv20-filtered-transcripts"
+        if filtered_dir.exists():
+            # Remove existing transcripts.* from data_path
+            for transcript_file in data_path.glob("transcripts.*"):
+                if transcript_file.is_file():
+                    logger.info(f"Removing existing {transcript_file.name} from data_path")
+                    transcript_file.unlink()
+
+            # Copy fresh transcripts from qv20-filtered-transcripts
+            for transcript_file in filtered_dir.glob("transcripts.*"):
+                if transcript_file.is_file():
+                    target_path = data_path / transcript_file.name
+                    logger.info(f"Copying {transcript_file.name} from qv20-filtered-transcripts to data_path")
+                    shutil.copy2(str(transcript_file), str(target_path))
+        else:
+            logger.warning("qv20-filtered-transcripts directory not found")
         return
 
+    # If no existing transcripts in original-transcripts, proceed with normal setup
     # Move all transcripts.* files from data_path to original-transcripts
     for transcript_file in data_path.glob("transcripts.*"):
         if transcript_file.is_file():
