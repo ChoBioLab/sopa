@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 from typing import List, Optional
 import shutil
+import glob
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
@@ -82,6 +83,35 @@ def copy_workflow_to_scratch(workflow_path: Path, sample_name: str) -> Path:
     return target_dir
 
 
+def setup_transcript_directories(data_path: Path) -> None:
+    """Set up and organize transcript directories and files."""
+    logger.info(f"Setting up transcript directories in: {data_path}")
+
+    # Create original-transcripts directory if it doesn't exist
+    original_transcripts_dir = data_path / "original-transcripts"
+    original_transcripts_dir.mkdir(exist_ok=True)
+
+    # Move all transcripts.* files from data_path to original-transcripts
+    for transcript_file in data_path.glob("transcripts.*"):
+        if transcript_file.is_file():
+            target_path = original_transcripts_dir / transcript_file.name
+            if not target_path.exists():
+                logger.info(f"Moving {transcript_file.name} to original-transcripts")
+                shutil.move(str(transcript_file), str(target_path))
+
+    # Copy transcripts.* from qv20-filtered-transcripts to data_path
+    filtered_dir = data_path / "qv20-filtered-transcripts"
+    if filtered_dir.exists():
+        for transcript_file in filtered_dir.glob("transcripts.*"):
+            if transcript_file.is_file():
+                target_path = data_path / transcript_file.name
+                if not target_path.exists():
+                    logger.info(f"Copying {transcript_file.name} from qv20-filtered-transcripts to data_path")
+                    shutil.copy2(str(transcript_file), str(target_path))
+    else:
+        logger.warning("qv20-filtered-transcripts directory not found")
+
+
 def create_lsf_script(
     sample_name: str,
     data_path: str,
@@ -124,7 +154,7 @@ source /hpc/packages/minerva-centos7/anaconda3/2018.12/etc/profile.d/conda.sh
 conda init bash
 conda activate $CONDA_ENV
 
-cd $SOPA_WORKFLOW 
+cd $SOPA_WORKFLOW
 
 snakemake \\
   --config data_path=$DATA_PATH \\
@@ -211,6 +241,9 @@ def main() -> None:
     # Generate LSF script for each sample
     logger.info(f"Processing {len(sample_dirs)} samples")
     for sample_dir in sample_dirs:
+        # Set up transcript directories for each sample
+        setup_transcript_directories(sample_dir)
+
         sample_name = parse_sample_name(sample_dir.name)
         logger.info(f"Processing sample: {sample_name}")
 
@@ -236,4 +269,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
