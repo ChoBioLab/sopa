@@ -131,7 +131,7 @@ snakemake \\
   --configfile=$SOPA_CONFIG_FILE \\
   --use-conda \\
   --profile lsf \\
-  --resources mem_mb=15000000
+  --resources mem_mb=5000000
 """
 
     logger.info(f"Writing LSF script to: {output_file}")
