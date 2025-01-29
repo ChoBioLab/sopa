@@ -162,6 +162,10 @@ snakemake \\
   --use-conda \\
   --profile lsf \\
   --resources mem_mb=5000000
+
+# Restore original transcript files
+echo "Restoring original transcript files..."
+cp $DATA_PATH/original-transcripts/transcripts.* $DATA_PATH/
 """
 
     logger.info(f"Writing LSF script to: {output_file}")
