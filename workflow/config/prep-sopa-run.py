@@ -8,6 +8,7 @@ import sys
 from typing import List, Optional
 import shutil
 import glob
+from datetime import datetime
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
@@ -16,6 +17,7 @@ DEFAULT_SOPA_SOURCE = "/sc/arion/projects/untreatedIBD/cache/tools/sopa"
 DEFAULT_QUEUE = "premium"
 BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs"
 SCRATCH_BASE = f"/sc/arion/scratch/{os.environ.get('USER')}"
+PROJ_BASE_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/sopa"
 
 # Configure logging
 logging.basicConfig(
@@ -36,11 +38,11 @@ def validate_path(path: Path, path_type: str = "directory") -> bool:
     return result
 
 
-def get_sample_directories(run_dir: Path) -> List[Path]:
-    """Get all valid sample directories from the run directory."""
-    logger.info(f"Scanning for sample directories in: {run_dir}")
+def get_sample_directories(source_data_dir: Path) -> List[Path]:
+    """Get all valid sample directories from the source data directory."""
+    logger.info(f"Scanning for sample directories in: {source_data_dir}")
     sample_dirs = [
-        d for d in run_dir.iterdir()
+        d for d in source_data_dir.iterdir()
         if d.is_dir()
         and d.name.startswith('output-')
         and d.name != 'lsf_scripts'
@@ -137,6 +139,20 @@ def setup_transcript_directories(data_path: Path) -> None:
         logger.warning("qv20-filtered-transcripts directory not found")
 
 
+def create_timestamped_run_dir(proj_dir: str, sample_name: str) -> Path:
+    """Create a timestamped run directory for the sample."""
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    run_dir_name = f"{sample_name}_{timestamp}"
+
+    proj_path = Path(PROJ_BASE_PATH) / proj_dir
+    run_dir = proj_path / run_dir_name
+
+    logger.info(f"Creating run directory: {run_dir}")
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    return run_dir
+
+
 def create_lsf_script(
     sample_name: str,
     data_path: str,
@@ -144,11 +160,15 @@ def create_lsf_script(
     email: str,
     config_file: str,
     sopa_workflow: str,
-    output_file: str,
-    queue: str
+    lsf_file: str,
+    queue: str,
+    proj_dir: str
 ) -> None:
     """Generate LSF submission script for a single sample."""
     logger.info(f"Generating LSF script for sample: {sample_name}")
+
+    # Create the timestamped run directory path
+    run_dir = create_timestamped_run_dir(proj_dir, sample_name)
 
     script_content = f"""#BSUB -J sopa-{sample_name}
 #BSUB -P acc_untreatedIBD
@@ -167,6 +187,7 @@ SOPA_WORKFLOW={sopa_workflow}
 DATA_PATH={data_path}
 SOPA_CONFIG_FILE={config_file}
 CONDA_ENV={conda_env}
+RUN_OUT_DIR={run_dir}
 
 ################################################################################
 
@@ -191,14 +212,28 @@ snakemake \\
 # Restore original transcript files
 echo "Restoring original transcript files..."
 cp $DATA_PATH/original-transcripts/transcripts.* $DATA_PATH/
+
+# Post-run housekeeping
+echo "Performing post-run housekeeping..."
+mkdir -p $RUN_OUT_DIR
+
+# Move explorer and zarr directories
+mv $DATA_PATH.explorer $RUN_OUT_DIR/
+mv $DATA_PATH.zarr $RUN_OUT_DIR/
+
+# Copy config file and LSF script
+cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
+cp {lsf_file} $RUN_OUT_DIR/
+
+echo "Housekeeping completed. Output files moved to: $RUN_OUT_DIR"
 """
 
-    logger.info(f"Writing LSF script to: {output_file}")
-    with open(output_file, 'w') as f:
+    logger.info(f"Writing LSF script to: {lsf_file}")
+    with open(lsf_file, 'w') as f:
         f.write(script_content)
 
     logger.info("Setting script permissions")
-    os.chmod(output_file, 0o755)
+    os.chmod(lsf_file, 0o755)
 
 
 def main() -> None:
@@ -214,6 +249,10 @@ def main() -> None:
     parser.add_argument(
         '--config-name', required=True,
         help='[REQUIRED] Name of sopa config present in run dir (eg cellpose-baysor.yaml)'
+    )
+    parser.add_argument(
+        '--project-dir', required=True,
+        help='[REQUIRED] Project directory name for output organization'
     )
     parser.add_argument(
         '--sopa-source', default=DEFAULT_SOPA_SOURCE,
@@ -235,11 +274,11 @@ def main() -> None:
     args = parser.parse_args()
     logger.info(f"Processing run ID: {args.id}")
 
-    # Construct the full run directory path
-    run_dir = Path(BASE_DATA_PATH) / args.id
-    logger.info(f"Validating run directory: {run_dir}")
-    if not validate_path(run_dir):
-        logger.error(f"Run directory {run_dir} does not exist")
+    # Construct the full source data directory path
+    source_data_dir = Path(BASE_DATA_PATH) / args.id
+    logger.info(f"Validating source data directory: {source_data_dir}")
+    if not validate_path(source_data_dir):
+        logger.error(f"Source data directory {source_data_dir} does not exist")
         sys.exit(1)
 
     # Validate source workflow directory
@@ -251,19 +290,19 @@ def main() -> None:
 
     # Validate config file
     logger.info(f"Validating config file: {args.config_name}")
-    config_file = run_dir / args.config_name
+    config_file = source_data_dir / args.config_name
     if not validate_path(config_file, "file"):
-        logger.error(f"Config file {config_file} not found in run directory")
+        logger.error(f"Config file {config_file} not found in source data directory")
         sys.exit(1)
 
     # Find all potential sample directories
-    sample_dirs = get_sample_directories(run_dir)
+    sample_dirs = get_sample_directories(source_data_dir)
     if not sample_dirs:
-        logger.error(f"No sample directories (output-*) found in {run_dir}")
+        logger.error(f"No sample directories (output-*) found in {source_data_dir}")
         sys.exit(1)
 
     # Create scripts directory
-    scripts_dir = run_dir / 'lsf_scripts'
+    scripts_dir = source_data_dir / 'lsf_scripts'
     logger.info(f"Creating scripts directory: {scripts_dir}")
     scripts_dir.mkdir(exist_ok=True)
 
@@ -281,7 +320,7 @@ def main() -> None:
             sample_name
         ), "workflow")
 
-        output_file = scripts_dir / f"submit_{sample_name}.lsf"
+        lsf_file = scripts_dir / f"submit_{sample_name}.lsf"
         create_lsf_script(
             sample_name=sample_name,
             data_path=str(sample_dir.absolute()),
@@ -289,8 +328,9 @@ def main() -> None:
             email=args.email,
             config_file=str(config_file.absolute()),
             sopa_workflow=str(scratch_workflow_path),
-            output_file=str(output_file),
-            queue=args.queue
+            lsf_file=str(lsf_file),
+            queue=args.queue,
+            proj_dir=args.project_dir
         )
 
     logger.info("LSF script generation completed successfully")
