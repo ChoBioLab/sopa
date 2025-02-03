@@ -317,8 +317,8 @@ def create_lsf_script(
 #BSUB -R span[hosts=1]
 #BSUB -R rusage[mem=8G]
 #BSUB -u {email}
-#BSUB -o $RUN_OUT_DIR/output_{sample_name}_%J.stdout
-#BSUB -eo $RUN_OUT_DIR/error_{sample_name}_%J.stderr
+#BSUB -o output_{sample_name}_%J.stdout
+#BSUB -eo error_{sample_name}_%J.stderr
 #BSUB -L /bin/bash
 
 # Generated LSF submission script
@@ -339,6 +339,10 @@ export no_proxy=localhost,*.chimera.hpc.mssm.edu,172.28.0.0/16
 source /hpc/packages/minerva-centos7/anaconda3/2018.12/etc/profile.d/conda.sh
 conda init bash
 conda activate $CONDA_ENV
+
+# Redirect stdout and stderr using exec
+exec 1> "$RUN_OUT_DIR/output_{sample_name}_%J.stdout"
+exec 2> "$RUN_OUT_DIR/error_{sample_name}_%J.stderr"
 
 cd $SOPA_WORKFLOW
 
