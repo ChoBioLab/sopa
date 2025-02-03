@@ -126,7 +126,8 @@ def create_params_log(
     data_path: str,
     config_file: Path,
     conda_env: str,
-    run_dir: Path
+    run_dir: Path,
+    proj_dir: str  # Add proj_dir parameter
 ) -> Path:
     """Create a parameter log CSV file."""
     # Read config parameters
@@ -135,22 +136,33 @@ def create_params_log(
     # Create params dictionary
     params = {
         'sample_name': sample_name,
+        'proj_dir': proj_dir,
+        'generation_timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'run_completion_timestamp': '',
         'data_path': data_path,
         'config_file': str(config_file),
         'conda_env': conda_env,
-        'run_dir': str(run_dir),
-        'generation_timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'run_completion_timestamp': ''  # Will be filled after run completion
+        'run_dir': str(run_dir)
     }
 
     # Add config parameters
     for k, v in config_params.items():
-        params[f'config_{k}'] = str(v)
+        params[k] = str(v) if v is not None else ''
+
+    # Define column order
+    ordered_columns = [
+        'sample_name',
+        'proj_dir',
+        'generation_timestamp',
+        'run_completion_timestamp'
+    ] + [k for k in params.keys() if k not in {
+        'sample_name', 'proj_dir', 'generation_timestamp', 'run_completion_timestamp'
+    }]
 
     # Create params log file
     params_file = run_dir / 'params_log.csv'
     with open(params_file, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=params.keys())
+        writer = csv.DictWriter(f, fieldnames=ordered_columns)
         writer.writeheader()
         writer.writerow(params)
 
@@ -306,7 +318,8 @@ def create_lsf_script(
         data_path=data_path,
         config_file=Path(config_file),
         conda_env=conda_env,
-        run_dir=run_dir
+        run_dir=run_dir,
+        proj_dir=proj_dir
     )
 
     script_content = f"""#BSUB -J sopa-{sample_name}
@@ -369,11 +382,11 @@ mv $DATA_PATH.zarr $RUN_OUT_DIR/
 cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
 cp {lsf_file} $RUN_OUT_DIR/
 
-# Update params log with completion timestamp
+# Update params log with completion timestamp using bash
 echo "Updating params log with completion timestamp..."
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 # Create temp file and swap to avoid any potential race conditions
-awk -v timestamp="$TIMESTAMP" -F, 'NR==1{{print $0}}NR==2{{$NF=timestamp;print}}' "$PARAMS_LOG" > "$PARAMS_LOG.tmp"
+awk -v timestamp="$TIMESTAMP" -F, 'BEGIN{{OFS=","}} NR==1{{print $0}}NR==2{{$NF=timestamp;print}}' "$PARAMS_LOG" > "$PARAMS_LOG.tmp"
 mv "$PARAMS_LOG.tmp" "$PARAMS_LOG"
 
 echo "Housekeeping completed. Output files moved to: $RUN_OUT_DIR"
