@@ -10,7 +10,7 @@
 #BSUB -eo error_%J.stderr
 #BSUB -L /bin/bash
 
-CONDA_ENV=/sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa-prep
+CONDA_ENV=/sc/arion/projects/untreatedIBD/ctastad/conda/envs/prep-sopa
 
 ################################################################################
 
