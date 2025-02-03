@@ -155,7 +155,7 @@ def main():
     parser.add_argument(
         '--base-path',
         type=str,
-        default="/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs",
+        default="/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs",
         help='Base directory containing Xenium runs'
     )
     parser.add_argument(

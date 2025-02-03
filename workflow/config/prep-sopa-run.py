@@ -17,7 +17,7 @@ DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
 DEFAULT_CONDA_ENV = "/sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa"
 DEFAULT_SOPA_SOURCE = "/sc/arion/projects/untreatedIBD/cache/tools/sopa"
 DEFAULT_QUEUE = "premium"
-BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/outputs"
+BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs"
 SCRATCH_BASE = f"/sc/arion/scratch/{os.environ.get('USER')}"
 PROJ_BASE_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/sopa"
 
