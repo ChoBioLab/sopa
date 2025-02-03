@@ -271,7 +271,7 @@ def setup_transcript_directories(data_path: Path) -> None:
 
 def create_timestamped_run_dir(proj_dir: str, sample_name: str) -> Path:
     """Create a timestamped run directory for the sample."""
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M")
     run_dir_name = f"{sample_name}_{timestamp}"
 
     proj_path = Path(PROJ_BASE_PATH) / proj_dir
@@ -317,8 +317,8 @@ def create_lsf_script(
 #BSUB -R span[hosts=1]
 #BSUB -R rusage[mem=8G]
 #BSUB -u {email}
-#BSUB -o output_{sample_name}_%J.stdout
-#BSUB -eo error_{sample_name}_%J.stderr
+#BSUB -o $RUN_OUT_DIR/output_{sample_name}_%J.stdout
+#BSUB -eo $RUN_OUT_DIR/error_{sample_name}_%J.stderr
 #BSUB -L /bin/bash
 
 # Generated LSF submission script
