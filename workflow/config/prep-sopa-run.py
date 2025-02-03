@@ -9,6 +9,8 @@ from typing import List, Optional
 import shutil
 import glob
 from datetime import datetime
+import yaml
+import csv
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
@@ -25,6 +27,54 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def read_yaml_config(config_file: Path) -> dict:
+    """Read and parse YAML config file."""
+    with open(config_file, 'r') as f:
+        try:
+            config = yaml.safe_load(f)
+            # Filter out commented fields (those starting with '_')
+            return {k: v for k, v in config.items() if not k.startswith('_')}
+        except yaml.YAMLError as e:
+            logger.error(f"Error parsing config file: {e}")
+            return {}
+
+
+def create_params_log(
+    sample_name: str,
+    data_path: str,
+    config_file: Path,
+    conda_env: str,
+    run_dir: Path
+) -> Path:
+    """Create a parameter log CSV file."""
+    # Read config parameters
+    config_params = read_yaml_config(config_file)
+
+    # Create params dictionary
+    params = {
+        'sample_name': sample_name,
+        'data_path': data_path,
+        'config_file': str(config_file),
+        'conda_env': conda_env,
+        'run_dir': str(run_dir),
+        'generation_timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'run_completion_timestamp': ''  # Will be filled after run completion
+    }
+
+    # Add config parameters
+    for k, v in config_params.items():
+        params[f'config_{k}'] = str(v)
+
+    # Create params log file
+    params_file = run_dir / 'params_log.csv'
+    with open(params_file, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=params.keys())
+        writer.writeheader()
+        writer.writerow(params)
+
+    return params_file
 
 
 def validate_path(path: Path, path_type: str = "directory") -> bool:
@@ -170,6 +220,15 @@ def create_lsf_script(
     # Create the timestamped run directory path
     run_dir = create_timestamped_run_dir(proj_dir, sample_name)
 
+    # Create params log
+    params_file = create_params_log(
+        sample_name=sample_name,
+        data_path=data_path,
+        config_file=Path(config_file),
+        conda_env=conda_env,
+        run_dir=run_dir
+    )
+
     script_content = f"""#BSUB -J sopa-{sample_name}
 #BSUB -P acc_untreatedIBD
 #BSUB -W 24:00
@@ -188,6 +247,7 @@ DATA_PATH={data_path}
 SOPA_CONFIG_FILE={config_file}
 CONDA_ENV={conda_env}
 RUN_OUT_DIR={run_dir}
+PARAMS_LOG={params_file}
 
 ################################################################################
 
@@ -224,6 +284,13 @@ mv $DATA_PATH.zarr $RUN_OUT_DIR/
 # Copy config file and LSF script
 cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
 cp {lsf_file} $RUN_OUT_DIR/
+
+# Update params log with completion timestamp
+echo "Updating params log with completion timestamp..."
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+# Create temp file and swap to avoid any potential race conditions
+awk -v timestamp="$TIMESTAMP" -F, 'NR==1{{print $0}}NR==2{{$NF=timestamp;print}}' "$PARAMS_LOG" > "$PARAMS_LOG.tmp"
+mv "$PARAMS_LOG.tmp" "$PARAMS_LOG"
 
 echo "Housekeeping completed. Output files moved to: $RUN_OUT_DIR"
 """
