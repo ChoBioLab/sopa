@@ -41,55 +41,45 @@ def flatten_dict(d: dict, parent_key: str = '', sep: str = '_') -> dict:
     return dict(items)
 
 
-def clean_field_name(field_name: str) -> str:
-    """Remove unwanted prefixes from field names."""
-    prefixes_to_remove = ['config_', 'patchify_', 'segmentation_']
-    result = field_name
-    for prefix in prefixes_to_remove:
-        if result.startswith(prefix):
-            result = result[len(prefix):]
-    return result
-
-
 def read_yaml_config(config_file: Path) -> dict:
     """Read and parse YAML config file, flattening all fields."""
     # Define all possible fields with their default empty values
     all_fields = {
         'read_technology': '',
-        'patch_width_pixel': '',
-        'patch_overlap_pixel': '',
-        'patch_width_microns': '',
-        'patch_overlap_microns': '',
-        'cellpose_diameter': '',
-        'cellpose_channels': '',
-        'cellpose_flow_threshold': '',
-        'cellpose_cellprob_threshold': '',
-        'cellpose_model_type': '',
-        'cellpose_min_area': '',
-        'cellpose_clip_limit': '',
-        'cellpose_gaussian_sigma': '',
-        'baysor_min_area': '',
-        'baysor_cell_key': '',
-        'baysor_unassigned_value': '',
-        'baysor_data_exclude_genes': '',
-        'baysor_data_force_2d': '',
-        'baysor_data_min_molecules_per_cell': '',
-        'baysor_data_gene': '',
-        'baysor_data_min_molecules_per_gene': '',
-        'baysor_data_min_molecules_per_segment': '',
-        'baysor_data_confidence_nn_id': '',
-        'baysor_data_x': '',
-        'baysor_data_y': '',
-        'baysor_data_z': '',
-        'baysor_segmentation_scale': '',
-        'baysor_segmentation_scale_std': '',
-        'baysor_segmentation_prior_segmentation_confidence': '',
-        'baysor_segmentation_estimate_scale_from_centers': '',
-        'baysor_segmentation_n_clusters': '',
-        'baysor_segmentation_iters': '',
-        'baysor_segmentation_n_cells_init': '',
-        'baysor_segmentation_nuclei_genes': '',
-        'baysor_segmentation_cyto_genes': '',
+        'patchify_patch_width_pixel': '',
+        'patchify_patch_overlap_pixel': '',
+        'patchify_patch_width_microns': '',
+        'patchify_patch_overlap_microns': '',
+        'segmentation_cellpose_diameter': '',
+        'segmentation_cellpose_channels': '',
+        'segmentation_cellpose_flow_threshold': '',
+        'segmentation_cellpose_cellprob_threshold': '',
+        'segmentation_cellpose_model_type': '',
+        'segmentation_cellpose_min_area': '',
+        'segmentation_cellpose_clip_limit': '',
+        'segmentation_cellpose_gaussian_sigma': '',
+        'segmentation_baysor_min_area': '',
+        'segmentation_baysor_cell_key': '',
+        'segmentation_baysor_unassigned_value': '',
+        'segmentation_baysor_config_data_exclude_genes': '',
+        'segmentation_baysor_config_data_force_2d': '',
+        'segmentation_baysor_config_data_min_molecules_per_cell': '',
+        'segmentation_baysor_config_data_gene': '',
+        'segmentation_baysor_config_data_min_molecules_per_gene': '',
+        'segmentation_baysor_config_data_min_molecules_per_segment': '',
+        'segmentation_baysor_config_data_confidence_nn_id': '',
+        'segmentation_baysor_config_data_x': '',
+        'segmentation_baysor_config_data_y': '',
+        'segmentation_baysor_config_data_z': '',
+        'segmentation_baysor_config_segmentation_scale': '',
+        'segmentation_baysor_config_segmentation_scale_std': '',
+        'segmentation_baysor_config_segmentation_prior_segmentation_confidence': '',
+        'segmentation_baysor_config_segmentation_estimate_scale_from_centers': '',
+        'segmentation_baysor_config_segmentation_n_clusters': '',
+        'segmentation_baysor_config_segmentation_iters': '',
+        'segmentation_baysor_config_segmentation_n_cells_init': '',
+        'segmentation_baysor_config_segmentation_nuclei_genes': '',
+        'segmentation_baysor_config_segmentation_cyto_genes': '',
         'aggregate_average_intensities': '',
         'aggregate_min_intensity_ratio': '',
         'aggregate_expand_radius_ratio': '',
@@ -116,11 +106,10 @@ def read_yaml_config(config_file: Path) -> dict:
             # Flatten the loaded config
             flat_config = flatten_dict(config)
 
-            # Clean field names and update the all_fields dictionary with actual values
+            # Update the all_fields dictionary with actual values
             for k, v in flat_config.items():
-                cleaned_key = clean_field_name(k)
-                if cleaned_key in all_fields:
-                    all_fields[cleaned_key] = str(v) if v is not None else ''
+                if k in all_fields:
+                    all_fields[k] = str(v) if v is not None else ''
 
             return all_fields
 
@@ -282,7 +271,7 @@ def setup_transcript_directories(data_path: Path) -> None:
 
 def create_timestamped_run_dir(proj_dir: str, sample_name: str) -> Path:
     """Create a timestamped run directory for the sample."""
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M")
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
     run_dir_name = f"{sample_name}_{timestamp}"
 
     proj_path = Path(PROJ_BASE_PATH) / proj_dir
