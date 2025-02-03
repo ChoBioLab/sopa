@@ -29,16 +29,96 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def flatten_dict(d: dict, parent_key: str = '', sep: str = '_') -> dict:
+    """Flatten a nested dictionary, joining keys with separator."""
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 def read_yaml_config(config_file: Path) -> dict:
-    """Read and parse YAML config file."""
-    with open(config_file, 'r') as f:
-        try:
+    """Read and parse YAML config file, flattening all fields."""
+    # Define all possible fields with their default empty values
+    all_fields = {
+        'read_technology': '',
+        'patchify_patch_width_pixel': '',
+        'patchify_patch_overlap_pixel': '',
+        'patchify_patch_width_microns': '',
+        'patchify_patch_overlap_microns': '',
+        'segmentation_cellpose_diameter': '',
+        'segmentation_cellpose_channels': '',
+        'segmentation_cellpose_flow_threshold': '',
+        'segmentation_cellpose_cellprob_threshold': '',
+        'segmentation_cellpose_model_type': '',
+        'segmentation_cellpose_min_area': '',
+        'segmentation_cellpose_clip_limit': '',
+        'segmentation_cellpose_gaussian_sigma': '',
+        'segmentation_baysor_min_area': '',
+        'segmentation_baysor_cell_key': '',
+        'segmentation_baysor_unassigned_value': '',
+        'segmentation_baysor_config_data_exclude_genes': '',
+        'segmentation_baysor_config_data_force_2d': '',
+        'segmentation_baysor_config_data_min_molecules_per_cell': '',
+        'segmentation_baysor_config_data_gene': '',
+        'segmentation_baysor_config_data_min_molecules_per_gene': '',
+        'segmentation_baysor_config_data_min_molecules_per_segment': '',
+        'segmentation_baysor_config_data_confidence_nn_id': '',
+        'segmentation_baysor_config_data_x': '',
+        'segmentation_baysor_config_data_y': '',
+        'segmentation_baysor_config_data_z': '',
+        'segmentation_baysor_config_segmentation_scale': '',
+        'segmentation_baysor_config_segmentation_scale_std': '',
+        'segmentation_baysor_config_segmentation_prior_segmentation_confidence': '',
+        'segmentation_baysor_config_segmentation_estimate_scale_from_centers': '',
+        'segmentation_baysor_config_segmentation_n_clusters': '',
+        'segmentation_baysor_config_segmentation_iters': '',
+        'segmentation_baysor_config_segmentation_n_cells_init': '',
+        'segmentation_baysor_config_segmentation_nuclei_genes': '',
+        'segmentation_baysor_config_segmentation_cyto_genes': '',
+        'aggregate_average_intensities': '',
+        'aggregate_min_intensity_ratio': '',
+        'aggregate_expand_radius_ratio': '',
+        'aggregate_gene_column': '',
+        'aggregate_min_transcripts': '',
+        'annotation_method': '',
+        'annotation_args_sc_reference_path': '',
+        'annotation_args_cell_type_key': '',
+        'annotation_args_reference_preprocessing': '',
+        'annotation_args_marker_cell_dict': '',
+        'explorer_gene_column': '',
+        'explorer_ram_threshold_gb': '',
+        'explorer_pixel_size': '',
+        'executables_baysor': ''
+    }
+
+    try:
+        with open(config_file, 'r') as f:
+            # Load YAML content
             config = yaml.safe_load(f)
-            # Filter out commented fields (those starting with '_')
-            return {k: v for k, v in config.items() if not k.startswith('_')}
-        except yaml.YAMLError as e:
-            logger.error(f"Error parsing config file: {e}")
-            return {}
+            if config is None:
+                return all_fields
+
+            # Flatten the loaded config
+            flat_config = flatten_dict(config)
+
+            # Update the all_fields dictionary with actual values
+            for k, v in flat_config.items():
+                if k in all_fields:
+                    all_fields[k] = str(v) if v is not None else ''
+
+            return all_fields
+
+    except yaml.YAMLError as e:
+        logger.error(f"Error parsing config file: {e}")
+        return all_fields
+    except Exception as e:
+        logger.error(f"Unexpected error reading config file: {e}")
+        return all_fields
 
 
 def create_params_log(
