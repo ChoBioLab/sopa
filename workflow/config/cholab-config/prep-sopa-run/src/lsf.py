@@ -66,8 +66,8 @@ conda init bash
 conda activate $CONDA_ENV
 
 # Redirect stdout and stderr using exec
-exec 1> "$RUN_OUT_DIR/output_{sample_name}_%J.stdout"
-exec 2> "$RUN_OUT_DIR/error_{sample_name}_%J.stderr"
+exec 1> "$RUN_OUT_DIR/output_{sample_name}.stdout"
+exec 2> "$RUN_OUT_DIR/error_{sample_name}.stderr"
 
 cd $SOPA_WORKFLOW
 
