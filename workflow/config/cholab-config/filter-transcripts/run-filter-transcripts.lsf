@@ -18,6 +18,6 @@ source /hpc/packages/minerva-centos7/anaconda3/2018.12/etc/profile.d/conda.sh
 conda init bash
 conda activate $CONDA_ENV
 
-cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config
+cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config/filter-transcripts
 
 python filter-transcripts.py
