@@ -18,7 +18,6 @@ This guide explains how to set up and run the SOPA (Spatial Omics Processing and
 cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config/prep-sopa-run
 conda env create -f environment.yml
 conda activate prep-sopa
-pip install -r requirements.txt
 ```
 
 ### 2. Set up SOPA Pipeline Environment
