@@ -11,6 +11,7 @@ from src import (
     DEFAULT_QUEUE,
     BASE_DATA_PATH,
     PROJ_BASE_PATH,
+    MAX_JOB_RAM,
     setup_logging,
     validate_path,
     get_sample_directories,
@@ -57,6 +58,10 @@ def main() -> None:
     parser.add_argument(
         '--queue', default=DEFAULT_QUEUE,
         help=f'LSF queue name (default: {DEFAULT_QUEUE})'
+    )
+    parser.add_argument(
+        '--max-ram', default=MAX_JOB_RAM,
+        help=f'Maximum combined RAM to not exceed by all processes (default: {MAX_JOB_RAM})'
     )
 
     args = parser.parse_args()
@@ -140,7 +145,8 @@ def main() -> None:
             queue=args.queue,
             proj_dir=args.project_dir,
             run_dir=run_dir,
-            params_file=params_file
+            params_file=params_file,
+            max_ram=args.max_ram
         )
 
     logger.info("LSF script generation completed successfully")

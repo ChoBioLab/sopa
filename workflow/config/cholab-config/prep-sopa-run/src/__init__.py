@@ -6,7 +6,8 @@ from .config import (
     BASE_DATA_PATH,
     SCRATCH_BASE,
     PROJ_BASE_PATH,
-    DEFAULT_CONFIG_FIELDS
+    DEFAULT_CONFIG_FIELDS,
+    MAX_JOB_RAM
 )
 
 from .utils import (
@@ -40,6 +41,7 @@ __all__ = [
     'SCRATCH_BASE',
     'PROJ_BASE_PATH',
     'DEFAULT_CONFIG_FIELDS',
+    'MAX_JOB_RAM',
 
     # Utils
     'setup_logging',

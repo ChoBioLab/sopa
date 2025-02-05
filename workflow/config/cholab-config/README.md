@@ -70,6 +70,7 @@ The setup tool repo needs to be on the cholab-config branch to work correctly
    - `--conda-env`: Path to SOPA conda environment
    - `--email`: Email for job notifications
    - `--queue`: LSF queue name
+   - `--max_ram`: Max RAM across all processes
 
 4. **Submit Jobs**
    - LSF scripts will be generated in the `lsf_scripts` directory

@@ -8,6 +8,7 @@ DEFAULT_QUEUE = "premium"
 BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs"
 SCRATCH_BASE = f"/sc/arion/scratch/{os.environ.get('USER')}"
 PROJ_BASE_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/sopa"
+MAX_JOB_RAM = "4000000"
 
 # Default config fields
 DEFAULT_CONFIG_FIELDS = {

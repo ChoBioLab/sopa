@@ -29,7 +29,8 @@ def create_lsf_script(
     queue: str,
     proj_dir: str,
     run_dir: Path,
-    params_file: Path
+    params_file: Path,
+    max_ram: int
 ) -> None:
     """Generate LSF submission script for a single sample."""
     logger.info(f"Generating LSF script for sample: {sample_name}")
@@ -53,6 +54,7 @@ SOPA_CONFIG_FILE={config_file}
 CONDA_ENV={conda_env}
 RUN_OUT_DIR={run_dir}
 PARAMS_LOG={params_file}
+MAX_JOB_RAM={max_ram}
 
 ################################################################################
 
@@ -76,7 +78,7 @@ snakemake \\
   --configfile=$SOPA_CONFIG_FILE \\
   --use-conda \\
   --profile lsf \\
-  --resources mem_mb=5000000
+  --resources mem_mb=$MAX_JOB_RAM
 
 # Restore original transcript files
 echo "Restoring original transcript files..."
