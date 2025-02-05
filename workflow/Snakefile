@@ -252,7 +252,7 @@ rule annotate:
         "envs/sopa.yaml"
     threads: 1
     resources:
-        queue="gpu -R 'a100' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
+        queue="gpu -R 'h10080g' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
         mem_mb=192_000,
     params:
         method_name = args['annotation']['method'],
