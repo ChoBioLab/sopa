@@ -259,7 +259,7 @@ rule annotate:
         args_annotation = str(args['annotation']['args']),
     shell:
         """
-        ml cuda/12.1.1
+        ml cuda/12.4.0
         ml cudnn/8.9.5-12
         sopa annotate {params.method_name} {paths.sdata_path} {params.args_annotation}
         """
