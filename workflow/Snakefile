@@ -26,7 +26,7 @@ rule to_spatialdata:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     resources:
         mem_mb=128_000,
     params:
@@ -46,7 +46,7 @@ checkpoint patchify_cellpose:
         args_patchify = str(args["patchify"].where(contains="pixel")),
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     shell:
         """
         sopa patchify image {paths.sdata_path} {params.args_patchify}
@@ -65,7 +65,7 @@ checkpoint patchify_baysor:
         arg_prior = "--use-prior" if args.cellpose else "",
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     shell:
         """
         sopa patchify baysor {paths.sdata_path} {params.args_patchify} {params.args_baysor} {params.arg_prior}
@@ -91,7 +91,7 @@ checkpoint patchify_comseg:
         arg_prior = "--use-prior" if args.cellpose else "",
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     shell:
         """
         sopa patchify comseg {paths.sdata_path} {params.args_patchify} {params.args_comseg} {params.arg_prior}
@@ -105,7 +105,7 @@ rule patch_segmentation_cellpose:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     params:
         args_cellpose = str(args["segmentation"]["cellpose"]),
     shell:
@@ -121,7 +121,7 @@ rule patch_segmentation_baysor:
         paths.smk_baysor_temp_dir / "{index}" / "segmentation_counts.loom",
     params:
         args_baysor_prior_seg = args.baysor_prior_seg,
-    threads: 16
+    threads: 8
     resources:
         mem_mb=128_000,
     shell:
@@ -149,7 +149,7 @@ rule patch_segmentation_comseg:
         paths.smk_comseg_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     resources:
         mem_mb=128_000,
     shell:
@@ -170,7 +170,7 @@ rule resolve_cellpose:
         touch(paths.smk_cellpose_boundaries),
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     shell:
         """
         sopa resolve cellpose {paths.sdata_path} --patch-dir {paths.smk_cellpose_temp_dir}
@@ -185,7 +185,7 @@ rule resolve_baysor:
         touch(paths.smk_table),
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     params:
         args_patches_dirs = lambda _, input: " ".join(f"--patches-dirs {directory}" for directory in input.dirs),
         args_min_area = args.min_area("baysor"),
@@ -205,7 +205,7 @@ rule resolve_comseg:
         touch(paths.smk_table),
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     params:
         args_patches_dirs=lambda _, input: " ".join(f"--patches-dirs {directory}" for directory in input.dirs),
         args_min_area=args.min_area("comseg"),
@@ -233,7 +233,7 @@ rule aggregate:
         touch(paths.smk_aggregation),
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     params:
         args_aggregate = str(args["aggregate"] or ""),
     resources:
@@ -271,7 +271,7 @@ rule image_write:
         paths.explorer_image,
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     resources:
         mem_mb=64_000,
     params:
@@ -290,7 +290,7 @@ rule report:
         paths.report,
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     shell:
         """
         sopa report {paths.sdata_path} {paths.report}
@@ -305,7 +305,7 @@ rule explorer:
         paths.explorer_experiment,
     conda:
         "envs/sopa.yaml"
-    threads: 16
+    threads: 8
     resources:
         mem_mb=256_000,
     params:
