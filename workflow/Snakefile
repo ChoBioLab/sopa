@@ -31,7 +31,6 @@ rule to_spatialdata:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         reader = args['read'].as_cli(),
         data_path = paths.data_path,
@@ -48,7 +47,6 @@ rule tissue_segmentation:
         touch(paths.smk_tissue_segmentation),
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -69,7 +67,6 @@ checkpoint patchify_image:
         sdata_path = paths.sdata_path,
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     shell:
         """
         sopa patchify image {params.sdata_path} {params.patchify_image}
@@ -88,7 +85,6 @@ checkpoint patchify_transcripts:
         sdata_path = paths.sdata_path,
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     shell:
         """
         sopa patchify transcripts {params.sdata_path} {params.patchify_transcripts}
@@ -102,7 +98,6 @@ rule patch_segmentation_cellpose:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -118,7 +113,6 @@ rule patch_segmentation_baysor:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -144,7 +138,6 @@ rule patch_segmentation_comseg:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         comseg_config = args["segmentation"]["comseg"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -167,7 +160,6 @@ rule resolve_cellpose:
         touch(paths.smk_cellpose_boundaries),
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         sdata_path = paths.sdata_path,
     shell:
@@ -183,7 +175,6 @@ rule resolve_baysor:
         touch(paths.smk_table),
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -203,7 +194,6 @@ rule resolve_comseg:
         touch(paths.smk_table),
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -232,7 +222,6 @@ rule aggregate:
         touch(paths.smk_aggregation),
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         aggregate = args["aggregate"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -249,8 +238,8 @@ rule annotate:
     conda:
         "envs/sopa2.yaml"
     resources:
-        queue="gpuexpress -R 'a100' -gpu 'num=1'" if args['annotation']['method'] == "tangram" else "shortq",
-        mem_mb=64_000,
+        partition="gpgpuq" if args['annotation']['method'] == "tangram" else "shortq",
+        gpu="a100:1" if args['annotation']['method'] == "tangram" else 0,
     params:
         method_name = args['annotation']['method'],
         annotation = args['annotation']['args'].as_cli(),
@@ -269,7 +258,6 @@ rule image_write:
         paths.explorer_image,
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         explorer = args["explorer"].as_cli(keys=['lazy', 'ram_threshold_gb', 'pixel_size', 'pixelsize']),
         sdata_path = paths.sdata_path,
@@ -291,7 +279,6 @@ rule report:
         report = paths.report,
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     shell:
         """
         sopa report {params.sdata_path} {params.report}
@@ -306,7 +293,6 @@ rule explorer:
         paths.explorer_experiment,
     conda:
         "envs/sopa2.yaml"
-    threads: 8
     params:
         explorer = args["explorer"].as_cli(),
         sdata_path = paths.sdata_path,
