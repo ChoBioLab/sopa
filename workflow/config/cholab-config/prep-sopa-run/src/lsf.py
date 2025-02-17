@@ -93,15 +93,42 @@ mkdir -p $RUN_OUT_DIR
 mv $DATA_PATH.explorer $RUN_OUT_DIR/
 mv $DATA_PATH.zarr $RUN_OUT_DIR/
 
-# Copy config file and LSF script
-cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
-cp {lsf_file} $RUN_OUT_DIR/
+# Copy config file, LSF script, and snakemake logs
+mv $SOPA_CONFIG_FILE $RUN_OUT_DIR/
+mv {lsf_file} $RUN_OUT_DIR/
+mkdir -p $RUN_OUT_DIR/snakemake_logs
+cp $SOPA_WORKFLOW/.snakemake/log/* $RUN_OUT_DIR/snakemake_logs/
+cp -r $SOPA_WORKFLOW/.snakemake/lsf_logs $RUN_OUT_DIR/snakemake_logs/
+
+if [ $? -eq 0 ]; then
+    echo "Successfully copied log files to $RUN_OUT_DIR/snakemake_logs"
+else
+    echo "Warning: Failed to copy log files"
+fi
 
 # Update params log with completion timestamp
 echo "Updating params log with completion timestamp..."
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 awk -v timestamp="$TIMESTAMP" -F, 'BEGIN{{OFS=","}} NR==1{{print $0}}NR==2{{$NF=timestamp;print}}' "$PARAMS_LOG" > "$PARAMS_LOG.tmp"
 mv "$PARAMS_LOG.tmp" "$PARAMS_LOG"
+
+# Add to LSF script post-run housekeeping section
+
+echo "Setting permissions for $RUN_OUT_DIR"
+# First set group ownership
+chgrp -R untreatedIBD $RUN_OUT_DIR
+
+# Set directory permissions
+find $RUN_OUT_DIR -type d -exec chmod 770 {} \;
+
+# Set file permissions
+find $RUN_OUT_DIR -type f -exec chmod 660 {} \;
+
+if [ $? -eq 0 ]; then
+    echo "Successfully modified permissions for $RUN_OUT_DIR"
+else
+    echo "Warning: Failed to modify permissions for $RUN_OUT_DIR"
+fi
 
 echo "Housekeeping completed. Output files moved to: $RUN_OUT_DIR"
 """

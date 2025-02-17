@@ -15,26 +15,37 @@ This guide explains how to set up and run the SOPA (Spatial Omics Processing and
 ### 1. Set up prep-sopa Environment
 ```bash
 # Create conda environment for prep-sopa
-cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config/prep-sopa-run
+cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/cholab-config/prep-sopa-run
 conda env create -f environment.yml
-conda activate prep-sopa
 ```
 
-### 2. Set up SOPA Pipeline Environment
+### 2. Set up SOPA and Snakemake Environments
 ```bash
 # Create main SOPA conda environment
-cd /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config
-conda env create -f environment.yml
-conda activate sopa
-pip install -r requirements.txt
+conda create --name sopa2 python=3.10
+conda activate sopa2
+pip install 'sopa[cellpose,baysor,tangram,wsi]'
+conda deactivate
+
+# Create Snakemake conda environment
+conda create -c conda-forge -c bioconda -n snakemake snakemake
+```
+
+### 3. Set up Baysor executable
+```bash
+# Pull compiled Baysor v0.7.1
+wget https://github.com/kharchenkolab/Baysor/releases/download/v0.7.1/baysor-x86_x64-linux-v0.7.1_build.zip
+unzip baysor-x86_x64-linux-v0.7.1_build.zip
+
+# Push to Julia config path so Baysor bin found at ~/.julia/bin/baysor
+mkdir ~/.julia
+cp -r bin/baysor/* ~/.julia
 ```
 
 ## Directory Structure
 
 The SOPA configuration and setup tools are located at:
-```/sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config```
-
-The setup tool repo needs to be on the cholab-config branch to work correctly
+```/sc/arion/projects/untreatedIBD/cache/tools/sopa/cholab-config```
 
 ## Setup Steps
 
@@ -45,7 +56,7 @@ The setup tool repo needs to be on the cholab-config branch to work correctly
 2. **Configuration Setup**
    - Copy the example config: `example_xenium-multichannel-config.yaml`
    - Modify parameters according to your needs
-   - Place the config file in your run directory (e.g., `/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs/CHO-001/`)
+   - Place the config file in your xenium run directory (e.g., `/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs/CHO-001/`)
 
 3. **Generate LSF Scripts**
    Activate the prep-sopa environment and run:
@@ -53,7 +64,7 @@ The setup tool repo needs to be on the cholab-config branch to work correctly
    ```bash
    conda activate prep-sopa
 
-   python /sc/arion/projects/untreatedIBD/cache/tools/sopa/workflow/config/cholab-config/prep-sopa-run/main.py \
+   python /sc/arion/projects/untreatedIBD/cache/tools/sopa/cholab-config/prep-sopa-run/main.py \
      --id <panel_id>/<run_id> \
      --config-name <your_config.yaml> \
      --project-dir <project_directory>
@@ -95,9 +106,8 @@ The pipeline creates:
 1. If jobs fail, check:
    - Error logs are under the working dir in scratch
      - master log is in `workflow/.snakemake/log` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/.snakemake/log)
-     - individual job logs are in `workflow/logs` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/logs)
+     - individual job logs are in `workflow/.snakemake/lsf_logs` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/.snakemake/lsf_logs)
    - LSF error files (*.stderr)
-   - Available disk space in scratch directory
 
 2. Common issues:
    - Missing or incorrect transcript files
@@ -106,24 +116,9 @@ The pipeline creates:
    - Conda environment activation failures
    - Missing dependencies in environment setup
 
-## Environment Management Tips
-
-- Keep environments separate (prep-sopa vs. main SOPA)
-- Update environments if new dependencies are added:
-  ```bash
-  conda env update -f environment.yml
-  pip install -r requirements.txt
-  ```
-- If environment becomes corrupted:
-  ```bash
-  conda remove --name <env_name> --all
-  conda env create -f environment.yml
-  ```
-
 ## Notes
 
 - The pipeline automatically handles transcript file management
 - Results are stored in both scratch and project directories
 - Default runtime is set to 24 hours
-- Jobs use 8 cores and 8GB memory by default
 - Configuration files must be placed in the specific run directory
