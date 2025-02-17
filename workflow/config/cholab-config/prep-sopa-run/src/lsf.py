@@ -39,9 +39,9 @@ def create_lsf_script(
 #BSUB -P acc_untreatedIBD
 #BSUB -W 24:00
 #BSUB -q {queue}
-#BSUB -n 8
+#BSUB -n 2
 #BSUB -R span[hosts=1]
-#BSUB -R rusage[mem=8G]
+#BSUB -R rusage[mem=4G]
 #BSUB -u {email}
 #BSUB -o output_{sample_name}_%J.stdout
 #BSUB -eo error_{sample_name}_%J.stderr
@@ -63,7 +63,7 @@ export https_proxy=http://172.28.7.1:3128
 export all_proxy=http://172.28.7.1:3128
 export no_proxy=localhost,*.chimera.hpc.mssm.edu,172.28.0.0/16
 
-source /hpc/packages/minerva-centos7/anaconda3/2018.12/etc/profile.d/conda.sh
+source /hpc/users/tastac01/micromamba/etc/profile.d/conda.sh
 conda init bash
 conda activate $CONDA_ENV
 
@@ -72,12 +72,13 @@ exec 1> "$RUN_OUT_DIR/output_{sample_name}.stdout"
 exec 2> "$RUN_OUT_DIR/error_{sample_name}.stderr"
 
 cd $SOPA_WORKFLOW
+alias baysor="/hpc/users/tastac01/bin/baysor/bin"
 
 snakemake \\
   --config data_path=$DATA_PATH \\
   --configfile=$SOPA_CONFIG_FILE \\
   --use-conda \\
-  --profile lsf \\
+  --profile profile/lsf \\
   --resources mem_mb=$MAX_JOB_RAM
 
 # Restore original transcript files

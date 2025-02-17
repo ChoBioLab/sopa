@@ -30,13 +30,15 @@ rule to_spatialdata:
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         reader = args['read'].as_cli(),
         data_path = paths.data_path,
         sdata_path = paths.sdata_path,
     shell:
         """
+        ml cuda
+        ml cudnn
         sopa convert {params.data_path} --sdata-path {params.sdata_path} {params.reader}
         """
 
@@ -46,7 +48,7 @@ rule tissue_segmentation:
     output:
         touch(paths.smk_tissue_segmentation),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -66,7 +68,7 @@ checkpoint patchify_image:
         patchify_image = args["patchify"].as_cli(contains="pixel"),
         sdata_path = paths.sdata_path,
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     shell:
         """
         sopa patchify image {params.sdata_path} {params.patchify_image}
@@ -84,7 +86,7 @@ checkpoint patchify_transcripts:
         patchify_transcripts = args.patchify_transcripts(),
         sdata_path = paths.sdata_path,
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     shell:
         """
         sopa patchify transcripts {params.sdata_path} {params.patchify_transcripts}
@@ -97,7 +99,7 @@ rule patch_segmentation_cellpose:
     output:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -112,7 +114,7 @@ rule patch_segmentation_baysor:
     output:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -137,7 +139,7 @@ rule patch_segmentation_comseg:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_polygons.json",
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         comseg_config = args["segmentation"]["comseg"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -159,7 +161,7 @@ rule resolve_cellpose:
     output:
         touch(paths.smk_cellpose_boundaries),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         sdata_path = paths.sdata_path,
     shell:
@@ -174,7 +176,7 @@ rule resolve_baysor:
         touch(paths.smk_baysor_boundaries),
         touch(paths.smk_table),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -193,7 +195,7 @@ rule resolve_comseg:
         touch(paths.smk_comseg_boundaries),
         touch(paths.smk_table),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -221,7 +223,7 @@ rule aggregate:
     output:
         touch(paths.smk_aggregation),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         aggregate = args["aggregate"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -236,7 +238,7 @@ rule annotate:
     output:
         directory(paths.annotations),
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     resources:
         partition="gpgpuq" if args['annotation']['method'] == "tangram" else "shortq",
         gpu="a100:1" if args['annotation']['method'] == "tangram" else 0,
@@ -257,7 +259,7 @@ rule image_write:
     output:
         paths.explorer_image,
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         explorer = args["explorer"].as_cli(keys=['lazy', 'ram_threshold_gb', 'pixel_size', 'pixelsize']),
         sdata_path = paths.sdata_path,
@@ -278,7 +280,7 @@ rule report:
         sdata_path = paths.sdata_path,
         report = paths.report,
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     shell:
         """
         sopa report {params.sdata_path} {params.report}
@@ -292,7 +294,7 @@ rule explorer:
     output:
         paths.explorer_experiment,
     conda:
-        "envs/sopa2.yaml"
+        "sopa2"
     params:
         explorer = args["explorer"].as_cli(),
         sdata_path = paths.sdata_path,

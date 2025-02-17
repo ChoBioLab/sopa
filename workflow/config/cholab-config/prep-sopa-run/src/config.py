@@ -2,7 +2,7 @@ import os
 
 # Default settings
 DEFAULT_EMAIL = "christopher.tastad@mssm.edu"
-DEFAULT_CONDA_ENV = "/sc/arion/projects/untreatedIBD/ctastad/conda/envs/sopa2"
+DEFAULT_CONDA_ENV = "/sc/arion/projects/untreatedIBD/ctastad/conda/envs/snakemake"
 DEFAULT_SOPA_SOURCE = "/sc/arion/projects/untreatedIBD/cache/tools/sopa"
 DEFAULT_QUEUE = "premium"
 BASE_DATA_PATH = "/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry/oba-outputs"

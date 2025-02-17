@@ -1,42 +1,42 @@
 executor: lsf
 
-cluster: "bsub -P {resources.lsf_project} -q {resources.lsf_queue} -J smk-{rule} -n {threads} -R 'span[hosts=1]' -M {resources.mem_mb} -W {resources.time} -o logs/{jobid}_%J.out -e logs/{jobid}_%J.err"
-
 default-resources:
-    mem_mb: 8_000
-    lsf_project: acc_untreatedIBD  # replace with your LSF project
-    lsf_queue: premium  # replace with a default LSF queue
-    time: 1:00
-    threads: 8
+  mem_mb: 8_000
+  lsf_project: acc_untreatedIBD
+  lsf_queue: premium
+  walltime: 90
+
+resource_mapping:
+  threads: "-n {threads}"
+  walltime: "-W {resources.walltime}"
 
 set-resources:
-    explorer:
-        mem_mb: 256_000
-    image_write:  
-        mem_mb: 64_000
-        time: 12:00  # increase walltime 
-    to_spatialdata:
-        mem_mb: 128_000
-    patch_segmentation_baysor:
-        mem_mb: 128_000 
-    aggregate:
-        mem_mb: 64_000
-    patchify_transcripts:
-        mem_mb: 32_000
-    report:
-        mem_mb: 32_000
-    annotate:
-        mem_mb: 64_000
-        time: 2:00
-        lsf_queue: "gpuexpress -R 'a100' -gpu 'num=1'"
+  explorer:
+      mem_mb: 256_000
+  image_write:
+      mem_mb: 64_000
+  to_spatialdata:
+      mem_mb: 128_000
+  patch_segmentation_baysor:
+      mem_mb: 128_000
+  aggregate:
+      mem_mb: 64_000
+  patchify_transcripts:
+      mem_mb: 32_000
+  report:
+      mem_mb: 32_000
+  annotate:
+      mem_mb: 64_000
+      lsf_queue: gpu
+      lsf_extra: "'-R select[h100nvl] -gpu num=1'"
 
 restart-times: 0
-max-jobs-per-second: 100  
+max-jobs-per-second: 100
 max-status-checks-per-second: 1
-local-cores: 8
+local-cores: 1
 latency-wait: 60
 jobs: 500
-keep-going: True  
+keep-going: True
 rerun-incomplete: True
 printshellcmds: True
 scheduler: greedy
