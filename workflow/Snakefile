@@ -248,8 +248,6 @@ rule annotate:
         sdata_path = paths.sdata_path,
     shell:
         """
-        ml cuda
-        ml cudnn
         sopa annotate {params.method_name} {params.sdata_path} {params.annotation}
         """
 
