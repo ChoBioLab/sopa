@@ -67,6 +67,9 @@ source /hpc/users/tastac01/micromamba/etc/profile.d/conda.sh
 conda init bash
 conda activate $CONDA_ENV
 
+# Create output directory
+mkdir -p $RUN_OUT_DIR
+
 # Redirect stdout and stderr using exec
 exec 1> "$RUN_OUT_DIR/output_{sample_name}.stdout"
 exec 2> "$RUN_OUT_DIR/error_{sample_name}.stderr"
@@ -87,14 +90,13 @@ cp $DATA_PATH/original-transcripts/transcripts.* $DATA_PATH/
 
 # Post-run housekeeping
 echo "Performing post-run housekeeping..."
-mkdir -p $RUN_OUT_DIR
 
 # Move explorer and zarr directories
 mv $DATA_PATH.explorer $RUN_OUT_DIR/
 mv $DATA_PATH.zarr $RUN_OUT_DIR/
 
 # Copy config file, LSF script, and snakemake logs
-mv $SOPA_CONFIG_FILE $RUN_OUT_DIR/
+cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
 mv {lsf_file} $RUN_OUT_DIR/
 mkdir -p $RUN_OUT_DIR/snakemake_logs
 cp $SOPA_WORKFLOW/.snakemake/log/* $RUN_OUT_DIR/snakemake_logs/
@@ -118,11 +120,11 @@ echo "Setting permissions for $RUN_OUT_DIR"
 # First set group ownership
 chgrp -R untreatedIBD $RUN_OUT_DIR
 
-# Set directory permissions
-find $RUN_OUT_DIR -type d -exec chmod 770 {} \;
+# Set directory permissions using find
+find $RUN_OUT_DIR -type d -exec chmod 770 {{}} \\;
 
-# Set file permissions
-find $RUN_OUT_DIR -type f -exec chmod 660 {} \;
+# Set file permissions using find
+find $RUN_OUT_DIR -type f -exec chmod 660 {{}} \\;
 
 if [ $? -eq 0 ]; then
     echo "Successfully modified permissions for $RUN_OUT_DIR"
