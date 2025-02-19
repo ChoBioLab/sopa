@@ -2,7 +2,7 @@ name: Build and Push Container
 
 on:
   push:
-    branches:
+    branches: 
       - master
       - sopa2-migration
   workflow_dispatch:
@@ -10,6 +10,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DOCKERFILE_PATH: sopa/containers/tangram/Dockerfile
 
 jobs:
   build-and-push:
@@ -39,6 +40,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ${{ env.DOCKERFILE_PATH }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
