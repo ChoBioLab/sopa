@@ -1,10 +1,13 @@
 executor: lsf
 
+use-singularity: true
+
 default-resources:
   mem_mb: 8_000
   lsf_project: acc_untreatedIBD
   lsf_queue: premium
   walltime: 90
+  gpu: 0
 
 resource_mapping:
   threads: "-n {threads}"
@@ -27,8 +30,8 @@ set-resources:
       mem_mb: 32_000
   annotate:
       mem_mb: 64_000
-      lsf_queue: gpu
-      lsf_extra: "'-R select[h100nvl] -gpu num=1'"
+      lsf_queue: gpuexpress
+      lsf_extra: "'-R select[a100] -gpu num=1'"
 
 restart-times: 0
 max-jobs-per-second: 100

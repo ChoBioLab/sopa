@@ -37,7 +37,7 @@ def create_lsf_script(
 
     script_content = f"""#BSUB -J sopa-{sample_name}
 #BSUB -P acc_untreatedIBD
-#BSUB -W 24:00
+#BSUB -W 2:00
 #BSUB -q {queue}
 #BSUB -n 2
 #BSUB -R span[hosts=1]
@@ -77,12 +77,17 @@ exec 2> "$RUN_OUT_DIR/error_{sample_name}.stderr"
 cd $SOPA_WORKFLOW
 alias baysor="/hpc/users/tastac01/bin/baysor/bin"
 
-snakemake \\
-  --config data_path=$DATA_PATH \\
-  --configfile=$SOPA_CONFIG_FILE \\
-  --use-conda \\
-  --profile profile/lsf \\
-  --resources mem_mb=$MAX_JOB_RAM
+
+# Set Singularity cache location
+ml singularity/3.6.4
+
+snakemake \
+  --config data_path=$DATA_PATH \
+  --configfile=$SOPA_CONFIG_FILE \
+  --use-conda \
+  --profile profile/lsf \
+  --resources mem_mb=$MAX_JOB_RAM \
+  -p
 
 # Restore original transcript files
 echo "Restoring original transcript files..."
