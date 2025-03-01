@@ -23,6 +23,9 @@ class Args:
         # whether to run annotation
         self.annotate = "annotation" in self.config and "method" in self.config["annotation"]
 
+        # whether to run novae
+        self.novae = "novae" in self.config
+
     def resolve_transcripts(self) -> str:
         """Arguments for `sopa resolve [baysor/comseg]`"""
         if self.transcript_based_method is None:

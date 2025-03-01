@@ -56,6 +56,10 @@ class WorkflowPaths:
             key = self.config["annotation"].get("args", {}).get("cell_type_key", "cell_type")
             self.annotations = self.table_dir / "table" / "obs" / key
 
+        ### Novae
+        self.smk_dir = self.sopa_cache
+        self.smk_novae = self.smk_dir / "novae"
+
     def temporary_boundaries_paths(self, file_content: str, method_name: str) -> list[Path]:
         """Compute the paths to the temporary boundary files
 

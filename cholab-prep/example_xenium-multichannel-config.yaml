@@ -93,6 +93,12 @@ annotation:
   #     CD68: Macrophage
   #     CD20: B cell
 
+novae:
+  radius: 80
+  model: MICS-Lab/novae-human-0
+  zero_shot: True
+  num_workers: 16
+
 explorer: # parameters related to the conversion to the Xenium Explorer (Sopa's visualizer)
   gene_column: "feature_name" # [optional] name of the column of the transcript dataframe indicating the genes names. Provide this if you want to see transcripts on the explorer
   ram_threshold_gb: 4 # [optional] images below this RAM threshold will be loaded in memory during conversion. It can accelerate image writing

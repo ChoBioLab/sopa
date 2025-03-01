@@ -270,6 +270,52 @@ rule annotate:
         sopa annotate {params.method_name} {params.sdata_path} {params.annotation}
         """
 
+rule novae:
+    input:
+        paths.annotations if args.annotate else paths.smk_aggregation,
+    output:
+        touch(paths.smk_novae),
+    conda:
+        "sopa2"
+    threads: 16
+    resources:
+        mem_mb=64_000,
+        queue="gpuexpress -R 'a100' -gpu 'num=1'",
+        time=180,
+    params:
+        sdata_path = paths.sdata_path,
+        radius = config["novae"]["radius"],
+        model = config["novae"]["model"],
+        zero_shot = config["novae"]["zero_shot"],
+        num_workers = config["novae"]["num_workers"],
+    shell:
+        """
+        python -c "
+import novae
+import spatialdata as sd
+
+sdata = sd.read_zarr('{params.sdata_path}')
+adata = sdata['table']
+
+model = novae.Novae.from_pretrained('{params.model}')
+
+# Compute spatial neighbors
+novae.utils.spatial_neighbors(adata, radius={params.radius})
+
+# Compute representations
+model.compute_representations(adata, zero_shot={str(params.zero_shot).lower()}, accelerator='cuda', num_workers={params.num_workers})
+
+# Assign domains at different levels
+model.assign_domains(adata, level=5)
+model.assign_domains(adata, level=10)
+model.assign_domains(adata, level=15)
+
+# Save the modified anndata object back to the same file
+sdata.write('{params.sdata_path}')
+"
+        """
+
+
 rule image_write:
     input:
         paths.sdata_zgroup,
@@ -294,6 +340,7 @@ rule report:
         get_smk_boundaries(args),
         paths.smk_aggregation,
         paths.annotations if args.annotate else [],
+        paths.smk_novae if args.novae else [],
     output:
         paths.report,
     params:
@@ -314,6 +361,7 @@ rule explorer:
         get_smk_boundaries(args),
         paths.smk_aggregation,
         paths.annotations if args.annotate else [],
+        paths.smk_novae if args.novae else [],
     output:
         paths.explorer_experiment,
     conda:
