@@ -31,14 +31,15 @@ rule to_spatialdata:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=128_000,
     params:
         reader = args['read'].as_cli(),
         data_path = paths.data_path,
         sdata_path = paths.sdata_path,
     shell:
         """
-        ml cuda
-        ml cudnn
         sopa convert {params.data_path} --sdata-path {params.sdata_path} {params.reader}
         """
 
@@ -49,6 +50,7 @@ rule tissue_segmentation:
         touch(paths.smk_tissue_segmentation),
     conda:
         "sopa2"
+    threads: 8
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -69,6 +71,7 @@ checkpoint patchify_image:
         sdata_path = paths.sdata_path,
     conda:
         "sopa2"
+    threads: 8
     shell:
         """
         sopa patchify image {params.sdata_path} {params.patchify_image}
@@ -87,6 +90,9 @@ checkpoint patchify_transcripts:
         sdata_path = paths.sdata_path,
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=32_000,
     shell:
         """
         sopa patchify transcripts {params.sdata_path} {params.patchify_transcripts}
@@ -100,6 +106,7 @@ rule patch_segmentation_cellpose:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
         "sopa2"
+    threads: 8
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -115,11 +122,12 @@ rule patch_segmentation_baysor:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
         "sopa2"
+    threads: 8
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
     resources:
-        cpus_per_task=1,
+        cpus_per_task=8,
     shell:
         """
         export JULIA_NUM_THREADS={resources.cpus_per_task} # parallelize within each patch for Baysor >= v0.7
@@ -140,6 +148,9 @@ rule patch_segmentation_comseg:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.h5ad",
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=128_000,
     params:
         comseg_config = args["segmentation"]["comseg"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -162,6 +173,7 @@ rule resolve_cellpose:
         touch(paths.smk_cellpose_boundaries),
     conda:
         "sopa2"
+    threads: 8
     params:
         sdata_path = paths.sdata_path,
     shell:
@@ -177,6 +189,7 @@ rule resolve_baysor:
         touch(paths.smk_table),
     conda:
         "sopa2"
+    threads: 8
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -196,6 +209,7 @@ rule resolve_comseg:
         touch(paths.smk_table),
     conda:
         "sopa2"
+    threads: 8
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,
@@ -224,6 +238,9 @@ rule aggregate:
         touch(paths.smk_aggregation),
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=64_000,
     params:
         aggregate = args["aggregate"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -239,9 +256,11 @@ rule annotate:
         directory(paths.annotations),
     conda:
         "sopa2"
+    threads: 2
     resources:
-        partition="gpgpuq" if args['annotation']['method'] == "tangram" else "shortq",
-        gpu="a100:1" if args['annotation']['method'] == "tangram" else 0,
+        mem_mb=64_000,
+        queue="gpuexpress -R 'a100' -gpu 'num=1'",
+        time=180,
     params:
         method_name = args['annotation']['method'],
         annotation = args['annotation']['args'].as_cli(),
@@ -258,6 +277,9 @@ rule image_write:
         paths.explorer_image,
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=64_000,
     params:
         explorer = args["explorer"].as_cli(keys=['lazy', 'ram_threshold_gb', 'pixel_size', 'pixelsize']),
         sdata_path = paths.sdata_path,
@@ -279,6 +301,9 @@ rule report:
         report = paths.report,
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=32_000,
     shell:
         """
         sopa report {params.sdata_path} {params.report}
@@ -293,6 +318,9 @@ rule explorer:
         paths.explorer_experiment,
     conda:
         "sopa2"
+    threads: 8
+    resources:
+        mem_mb=256_000,
     params:
         explorer = args["explorer"].as_cli(),
         sdata_path = paths.sdata_path,

@@ -37,9 +37,9 @@ def create_lsf_script(
 
     script_content = f"""#BSUB -J sopa-{sample_name}
 #BSUB -P acc_untreatedIBD
-#BSUB -W 2:00
+#BSUB -W 8:00
 #BSUB -q {queue}
-#BSUB -n 2
+#BSUB -n 4
 #BSUB -R span[hosts=1]
 #BSUB -R rusage[mem=4G]
 #BSUB -u {email}
@@ -77,17 +77,12 @@ exec 2> "$RUN_OUT_DIR/error_{sample_name}.stderr"
 cd $SOPA_WORKFLOW
 alias baysor="/hpc/users/tastac01/bin/baysor/bin"
 
-
-# Set Singularity cache location
-ml singularity/3.6.4
-
 snakemake \
   --config data_path=$DATA_PATH \
   --configfile=$SOPA_CONFIG_FILE \
   --use-conda \
-  --profile profile/lsf \
-  --resources mem_mb=$MAX_JOB_RAM \
-  -p
+  --profile lsf \
+  --resources mem_mb=$MAX_JOB_RAM
 
 # Restore original transcript files
 echo "Restoring original transcript files..."
@@ -105,7 +100,7 @@ cp $SOPA_CONFIG_FILE $RUN_OUT_DIR/
 mv {lsf_file} $RUN_OUT_DIR/
 mkdir -p $RUN_OUT_DIR/snakemake_logs
 cp $SOPA_WORKFLOW/.snakemake/log/* $RUN_OUT_DIR/snakemake_logs/
-cp -r $SOPA_WORKFLOW/.snakemake/lsf_logs $RUN_OUT_DIR/snakemake_logs/
+cp -r $SOPA_WORKFLOW/logs $RUN_OUT_DIR/snakemake_logs/
 
 if [ $? -eq 0 ]; then
     echo "Successfully copied log files to $RUN_OUT_DIR/snakemake_logs"
@@ -116,7 +111,7 @@ fi
 # Update params log with completion timestamp
 echo "Updating params log with completion timestamp..."
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-awk -v timestamp="$TIMESTAMP" -F, 'BEGIN{{OFS=","}} NR==1{{print $0}}NR==2{{$NF=timestamp;print}}' "$PARAMS_LOG" > "$PARAMS_LOG.tmp"
+awk -v timestamp="$TIMESTAMP" -F, 'BEGIN{{OFS=","}} NR==1{{print $0}}NR==2{{$4=timestamp;print}}' "{params_file}" > "{params_file}.tmp"
 mv "$PARAMS_LOG.tmp" "$PARAMS_LOG"
 
 # Add to LSF script post-run housekeeping section

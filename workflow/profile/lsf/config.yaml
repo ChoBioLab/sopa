@@ -1,47 +1,19 @@
+# Warning: this profile is still experimental.
+
 executor: lsf
-
-use-singularity: true
-
 default-resources:
-  mem_mb: 8_000
-  lsf_project: acc_untreatedIBD
-  lsf_queue: premium
-  walltime: 90
-  gpu: 0
+    mem_mb: 8_000 # default rules memory in MB (you can keep this value)
+    gpu: 0
 
-resource_mapping:
-  threads: "-n {threads}"
-  walltime: "-W {resources.walltime}"
-
-set-resources:
-  explorer:
-      mem_mb: 256_000
-  image_write:
-      mem_mb: 64_000
-  to_spatialdata:
-      mem_mb: 128_000
-  patch_segmentation_baysor:
-      mem_mb: 128_000
-  aggregate:
-      mem_mb: 64_000
-  patchify_transcripts:
-      mem_mb: 32_000
-  report:
-      mem_mb: 32_000
-  annotate:
-      mem_mb: 64_000
-      lsf_queue: gpuexpress
-      lsf_extra: "'-R select[a100] -gpu num=1'"
-
+# other options (you can keep the default values)
 restart-times: 0
 max-jobs-per-second: 100
 max-status-checks-per-second: 1
 local-cores: 1
 latency-wait: 60
-jobs: 500
+jobs: 50
 keep-going: True
 rerun-incomplete: True
 printshellcmds: True
 scheduler: greedy
 use-conda: True
-conda-frontend: conda
