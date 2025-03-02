@@ -286,35 +286,68 @@ rule novae:
         sdata_path = paths.sdata_path,
         radius = config["novae"]["radius"],
         model = config["novae"]["model"],
-        zero_shot = config["novae"]["zero_shot"],
+        zero_shot = "True" if config["novae"]["zero_shot"] else "False",
         num_workers = config["novae"]["num_workers"],
     shell:
         """
         python -c "
 import novae
 import spatialdata as sd
+import anndata as ad
+import os
+import shutil
+import zarr
 
+# Read the SpatialData object
 sdata = sd.read_zarr('{params.sdata_path}')
 adata = sdata['table']
 
+# Run Novae on the AnnData object
 model = novae.Novae.from_pretrained('{params.model}')
 
 # Compute spatial neighbors
 novae.utils.spatial_neighbors(adata, radius={params.radius})
 
 # Compute representations
-model.compute_representations(adata, zero_shot={str(params.zero_shot).lower()}, accelerator='cuda', num_workers={params.num_workers})
+model.compute_representations(adata, zero_shot={params.zero_shot}, accelerator='cuda', num_workers={params.num_workers})
 
 # Assign domains at different levels
 model.assign_domains(adata, level=5)
 model.assign_domains(adata, level=10)
 model.assign_domains(adata, level=15)
 
-# Save the modified anndata object back to the same file
-sdata.write('{params.sdata_path}')
+# Update the table in the SpatialData object
+sdata['table'] = adata
+
+# Create a temporary directory for writing
+temp_dir = '{params.sdata_path}_temp'
+if os.path.exists(temp_dir):
+    shutil.rmtree(temp_dir)
+os.makedirs(temp_dir)
+
+# Write the entire SpatialData object to the temporary directory
+sdata.write(temp_dir)
+
+# Close the SpatialData object to release file locks
+del sdata
+
+# Copy only the table directory from the temporary location to the original location
+src_table_dir = os.path.join(temp_dir, 'tables', 'table')
+dst_table_dir = os.path.join('{params.sdata_path}', 'tables', 'table')
+
+# Remove the destination directory if it exists
+if os.path.exists(dst_table_dir):
+    shutil.rmtree(dst_table_dir)
+
+# Copy the new table directory to the destination
+shutil.copytree(src_table_dir, dst_table_dir)
+
+# Clean up the temporary directory
+shutil.rmtree(temp_dir)
+
+print('Successfully updated the table with Novae domains')
 "
         """
-
 
 rule image_write:
     input:
