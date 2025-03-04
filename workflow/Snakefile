@@ -259,7 +259,7 @@ rule annotate:
     threads: 2
     resources:
         mem_mb=64_000,
-        queue="gpuexpress -R 'a100' -gpu 'num=1'",
+        queue="gpu -R 'h100nvl' -gpu 'num=1'",
         time=180,
     params:
         method_name = args['annotation']['method'],
@@ -280,7 +280,7 @@ rule novae:
     threads: 16
     resources:
         mem_mb=64_000,
-        queue="gpuexpress -R 'a100' -gpu 'num=1'",
+        queue="gpu -R 'h100nvl' -gpu 'num=1'",
         time=45,
     params:
         sdata_path = paths.sdata_path,
