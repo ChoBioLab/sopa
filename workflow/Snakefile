@@ -276,12 +276,12 @@ rule novae:
     output:
         touch(paths.smk_novae),
     conda:
-        "sopa2"
+        "novae"
     threads: 16
     resources:
         mem_mb=64_000,
         queue="gpuexpress -R 'a100' -gpu 'num=1'",
-        time=180,
+        time=45,
     params:
         sdata_path = paths.sdata_path,
         radius = config["novae"]["radius"],
@@ -293,14 +293,17 @@ rule novae:
         python -c "
 import novae
 import spatialdata as sd
+from spatialdata import SpatialData
 import anndata as ad
 import os
-import shutil
-import zarr
+import numpy as np
+
+# Define the table key constant since we're not in the sopa environment
+TABLE_KEY = 'table'
 
 # Read the SpatialData object
 sdata = sd.read_zarr('{params.sdata_path}')
-adata = sdata['table']
+adata = sdata[TABLE_KEY]
 
 # Run Novae on the AnnData object
 model = novae.Novae.from_pretrained('{params.model}')
@@ -317,33 +320,35 @@ model.assign_domains(adata, level=10)
 model.assign_domains(adata, level=15)
 
 # Update the table in the SpatialData object
-sdata['table'] = adata
+sdata[TABLE_KEY] = adata
 
-# Create a temporary directory for writing
-temp_dir = '{params.sdata_path}_temp'
-if os.path.exists(temp_dir):
-    shutil.rmtree(temp_dir)
-os.makedirs(temp_dir)
+# Use a direct approach for updating just the table
+if sdata.is_backed():
+    sdata.delete_element_from_disk(TABLE_KEY)
+    sdata.write_element(TABLE_KEY, overwrite=True)
+else:
+    # Fallback to a temporary directory approach if not backed
+    import tempfile
+    import shutil
 
-# Write the entire SpatialData object to the temporary directory
-sdata.write(temp_dir)
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Write to temporary location
+        sdata.write(temp_dir)
 
-# Close the SpatialData object to release file locks
-del sdata
+        # Copy only the table directory
+        src_table_dir = os.path.join(temp_dir, 'tables', 'table')
+        dst_table_dir = os.path.join('{params.sdata_path}', 'tables', 'table')
 
-# Copy only the table directory from the temporary location to the original location
-src_table_dir = os.path.join(temp_dir, 'tables', 'table')
-dst_table_dir = os.path.join('{params.sdata_path}', 'tables', 'table')
+        # Remove the destination directory if it exists
+        if os.path.exists(dst_table_dir):
+            shutil.rmtree(dst_table_dir)
 
-# Remove the destination directory if it exists
-if os.path.exists(dst_table_dir):
-    shutil.rmtree(dst_table_dir)
-
-# Copy the new table directory to the destination
-shutil.copytree(src_table_dir, dst_table_dir)
-
-# Clean up the temporary directory
-shutil.rmtree(temp_dir)
+        # Copy the new table directory to the destination
+        shutil.copytree(src_table_dir, dst_table_dir)
+    finally:
+        # Clean up the temporary directory
+        shutil.rmtree(temp_dir)
 
 print('Successfully updated the table with Novae domains')
 "
