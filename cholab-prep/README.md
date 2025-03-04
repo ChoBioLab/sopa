@@ -6,9 +6,10 @@ This guide explains how to set up and run the SOPA (Spatial Omics Processing and
 
 1. Access to Minerva HPC cluster with valid credentials
 2. Filtered transcripts must be prepared before running this pipeline
-3. Write access to the following paths:
+3. Read or Write access to the following paths:
    - `/sc/arion/projects/untreatedIBD/cache/tools/sopa`
    - `/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/xenium-registry`
+   - `/sc/arion/projects/untreatedIBD/cache/nfs-data-registries/sopa`
 
 ## Environment Setup
 
@@ -25,10 +26,11 @@ conda env create -f environment.yml
 conda create --name sopa2 python=3.10
 conda activate sopa2
 pip install 'sopa[cellpose,baysor,tangram,wsi]'
+
+# Install Snakemake
+conda install -c conda-forge -c bioconda snakemake
 conda deactivate
 
-# Create Snakemake conda environment
-conda create -c conda-forge -c bioconda -n snakemake snakemake
 ```
 
 ### 3. Set up Baysor executable
@@ -106,7 +108,7 @@ The pipeline creates:
 1. If jobs fail, check:
    - Error logs are under the working dir in scratch
      - master log is in `workflow/.snakemake/log` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/.snakemake/log)
-     - individual job logs are in `workflow/.snakemake/lsf_logs` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/.snakemake/lsf_logs)
+     - individual job logs are in `workflow/.snakemake/lsf_logs` (e.g. /sc/arion/scratch/tastac01/sopa_50006A-TUQ97N-EA/workflow/logs)
    - LSF error files (*.stderr)
 
 2. Common issues:
@@ -120,5 +122,4 @@ The pipeline creates:
 
 - The pipeline automatically handles transcript file management
 - Results are stored in both scratch and project directories
-- Default runtime is set to 24 hours
 - Configuration files must be placed in the specific run directory
