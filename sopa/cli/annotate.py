@@ -49,6 +49,10 @@ def tangram(
         10_000,
         help="Maximum samples to be considered in the reference for tangram. Low values will decrease the memory usage",
     ),
+    threshold: float = typer.Option(
+        0.5,
+        help="Threshold for filtering low probability annotations",
+    ),
 ):
     """Tangram segmentation (i.e., uses an annotated scRNAseq reference to transfer cell-types)"""
     import anndata
@@ -67,6 +71,7 @@ def tangram(
         reference_preprocessing=reference_preprocessing,
         bag_size=bag_size,
         max_obs_reference=max_obs_reference,
+        threshold=threshold,
     )
     if sdata.is_backed():
         sdata.delete_element_from_disk(SopaKeys.TABLE)
