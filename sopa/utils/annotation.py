@@ -59,6 +59,7 @@ def tangram_annotate(
     reference_preprocessing: str | None = None,
     bag_size: int = 10_000,
     max_obs_reference: int = 10_000,
+    threshold: float = 0.5,
     **kwargs,
 ):
     """Tangram multi-level annotation. Tangram is run on multiple bags of cells to decrease the RAM usage.
@@ -82,6 +83,7 @@ def tangram_annotate(
         reference_preprocessing,
         bag_size,
         max_obs_reference,
+        threshold=threshold,
         **kwargs,
     ).run()
 
@@ -95,6 +97,7 @@ class MultiLevelAnnotation:
         reference_preprocessing: str | None,
         bag_size: int,
         max_obs_reference: int,
+        threshold: float = 0.5,
         clip_percentile: float = 0.95,
     ):
         self.ad_sp = ad_sp
@@ -109,6 +112,7 @@ class MultiLevelAnnotation:
         self.reference_preprocessing = reference_preprocessing
         self.bag_size = bag_size
         self.max_obs_reference = max_obs_reference
+        self.threshold = threshold
         self.clip_percentile = clip_percentile
 
         assert (
@@ -280,7 +284,9 @@ class MultiLevelAnnotation:
                 device=self.device,
             )
 
-            tg.project_cell_annotations(ad_map, ad_sp_split, annotation=self.level_obs_key(level))
+            tg.project_cell_annotations(
+                ad_map, ad_sp_split, annotation=self.level_obs_key(level), threshold=self.threshold
+            )
 
             res = ad_sp_split.obsm["tangram_ct_pred"]
             self.ad_sp.obsm[self.probs_key(level)].loc[split, res.columns] = res

@@ -81,6 +81,7 @@ annotation:
     sc_reference_path: /sc/arion/projects/untreatedIBD/cache/reference-objects/oliver-2024-subset.h5ad # path to the annotated scRNAseq reference used by Tangram
     cell_type_key: level_2_annot # key of adata_ref.obs containing the cell-type annotation
     reference_preprocessing: log1p # if your reference `adata.X` contains raw counts, then remove this parameter from the config. Else, choose "log1p" (if you have already run both `sc.pp.normalize_total` and `sc.pp.log1p` on your reference) or "normalized" (if you have already run `sc.pp.normalize_total` on your reference)
+    threshold: 0.5  # Add this parameter to control the threshold for cell type assignment
 
   # [only if you choose the simple staining-based annotation (comment out the lines below)]
   # method: fluorescence
