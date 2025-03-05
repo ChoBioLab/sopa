@@ -51,10 +51,6 @@ def tangram(
         10_000,
         help="Maximum samples to be considered in the reference for tangram. Low values will decrease the memory usage",
     ),
-    threshold: float = typer.Option(
-        0.5,
-        help="Threshold for filtering low probability annotations",
-    ),
     save_maps: bool = typer.Option(
         False,
         help="Save Tangram training data to disk",
@@ -88,7 +84,6 @@ def tangram(
         reference_preprocessing=reference_preprocessing,
         bag_size=bag_size,
         max_obs_reference=max_obs_reference,
-        threshold=threshold,
         output_dir=output_dir,
     )
     if sdata.is_backed():
