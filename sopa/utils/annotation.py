@@ -206,85 +206,106 @@ class MultiLevelAnnotation:
 
         return ad_sp_split
 
-    def run(self):
+    def run(self, output_dir=None):
+        """Run Tangram annotation for all levels."""
+        # Track if we need to save training data
+        save_training_data = output_dir is not None
+        # Initialize storage for training data paths
+        training_data_paths = {}
         for level in range(self.levels):
             log.info(f"Running on level {level}")
-
             self.init_obsm(level)
             self.ad_sp.obs[self.level_obs_key(level)] = np.nan
-
+            # Create level directory if saving
+            if save_training_data:
+                from pathlib import Path
+                output_dir = Path(output_dir)
+                level_dir = output_dir / "tangram_maps" / f"level_{level}"
+                level_dir.mkdir(parents=True, exist_ok=True)
+                training_data_paths[f"level_{level}"] = {}
             if level == 0:
-                self.run_group()
-                continue
-
-            previous_key = self.level_obs_key(level - 1)
-            obs_key = self.level_obs_key(level)
-            self.ad_sp.obs[obs_key] = self.ad_sp.obs[previous_key]
-            groups = self.ad_sc.obs.groupby(previous_key)
-            for ct in groups.groups.keys():
-                group: pd.DataFrame = groups.get_group(ct)
-                indices_sp = self.ad_sp.obs_names[self.ad_sp.obs[previous_key] == ct]
-
-                sub_cts = group[obs_key].unique()
-                if len(sub_cts) == 1:
-                    self.ad_sp.obsm[self.probs_key(level)].loc[indices_sp, sub_cts[0]] = 1
-                    continue
-
-                log.info(f"[Cell type {ct}]")
-                self.run_group(level, indices_sp, group.index)
-
-        log.info("Finished running Tangram")
-
+                # For level 0, run on all cells
+                self.run_group(level, output_dir=level_dir if save_training_data else None)
+            else:
+                # For higher levels, run on each cell type from previous level
+                previous_key = self.level_obs_key(level - 1)
+                obs_key = self.level_obs_key(level)
+                self.ad_sp.obs[obs_key] = self.ad_sp.obs[previous_key]
+                groups = self.ad_sc.obs.groupby(previous_key)
+                for ct in groups.groups.keys():
+                    group: pd.DataFrame = groups.get_group(ct)
+                    indices_sp = self.ad_sp.obs_names[self.ad_sp.obs[previous_key] == ct]
+                    sub_cts = group[obs_key].unique()
+                    if len(sub_cts) == 1:
+                        self.ad_sp.obsm[self.probs_key(level)].loc[indices_sp, sub_cts[0]] = 1
+                        continue
+                    log.info(f"[Cell type {ct}]")
+                    # Create cell type directory if saving
+                    if save_training_data:
+                        ct_dir = level_dir / f"ct_{ct}"
+                        ct_dir.mkdir(exist_ok=True)
+                        training_data_paths[f"level_{level}"][f"ct_{ct}"] = {}
+                    else:
+                        ct_dir = None
+                    self.run_group(level, indices_sp, group.index, output_dir=ct_dir)
+        # Store paths to training data if saved
+        if save_training_data:
+            if SopaKeys.UNS_KEY not in self.ad_sp.uns:
+                self.ad_sp.uns[SopaKeys.UNS_KEY] = {}
+            self.ad_sp.uns[SopaKeys.UNS_KEY]["tangram_training_data_paths"] = training_data_paths
+        # Store cell type keys
         if SopaKeys.UNS_KEY not in self.ad_sp.uns:
             self.ad_sp.uns[SopaKeys.UNS_KEY] = {}
-
         self.ad_sp.uns[SopaKeys.UNS_KEY][SopaKeys.UNS_CELL_TYPES] = [
             self.level_obs_key(level) for level in range(self.levels)
         ]
+        log.info("Finished running Tangram")
 
-    def run_group(self, level: int = 0, indices_sp=None, indices_sc=None):
+    def run_group(self, level: int = 0, indices_sp=None, indices_sc=None, output_dir=None):
+        """Run Tangram on a group of cells and save training data if requested."""
         try:
             import tangram as tg
         except ImportError:
             raise ImportError("To use tangram, you need its corresponding sopa extra: `pip install 'sopa[tangram]'`.")
-
         if indices_sp is not None and len(indices_sp) == 0:
             log.warning("No cell annotated in the upper level...")
             return
-
         indices_sp = self.ad_sp.obs_names if indices_sp is None else indices_sp
         ad_sp_ = self.ad_sp[indices_sp].copy()
-
         indices_sc = self.ad_sc.obs_names if indices_sc is None else indices_sc
         ad_sc_ = self.ad_sc[indices_sc].copy()
-
         if ad_sc_.n_obs >= self.max_obs_reference:
             log.info(f"Subsampling reference to {self.max_obs_reference} cells...")
             sc.pp.subsample(ad_sc_, n_obs=self.max_obs_reference)
-
         log.info(f"(n_obs_spatial={ad_sp_.n_obs}, n_obs_ref={ad_sc_.n_obs})")
-
         if not self.can_run(ad_sp_, ad_sc_):
             log.info("No annotations at this level")
             return
-
         n_splits = math.ceil(ad_sp_.n_obs / self.bag_size)
         for i, split in enumerate(self.split_indices(indices_sp, n_splits)):
             log.info(f"--- Split {i + 1} / {n_splits} ---")
-
             ad_sp_split = self.pp_adata(ad_sp_, ad_sc_, split)
-
             ad_map = tg.map_cells_to_space(
                 ad_sc_,
                 ad_sp_split,
                 device=self.device,
             )
-
+            # Save training data if output directory is provided
+            if output_dir is not None:
+                # Extract training data
+                train_df = ad_map.uns['train_genes_df'].copy()
+                # Add metadata columns
+                train_df['level'] = level
+                train_df['split'] = i
+                train_df['n_spatial_cells'] = ad_sp_split.n_obs
+                train_df['n_reference_cells'] = ad_sc_.n_obs
+                # Save as CSV (much smaller than h5ad)
+                from pathlib import Path
+                output_path = Path(output_dir) / f"split_{i}_training_data.csv"
+                train_df.to_csv(output_path, index=False)
             tg.project_cell_annotations(ad_map, ad_sp_split, annotation=self.level_obs_key(level))
-
             res = ad_sp_split.obsm["tangram_ct_pred"]
             self.ad_sp.obsm[self.probs_key(level)].loc[split, res.columns] = res
-
         df_group = self.ad_sp.obsm[self.probs_key(level)].loc[indices_sp]
         self.ad_sp.obs.loc[indices_sp, self.level_obs_key(level)] = self.get_hard_labels(df_group)
 
