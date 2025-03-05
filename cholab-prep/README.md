@@ -26,6 +26,8 @@ conda env create -f environment.yml
 conda create --name sopa2 python=3.10
 conda activate sopa2
 pip install 'sopa[cellpose,baysor,tangram,wsi]'
+pip uninstall numpy
+pip install numpy==2.0.2
 
 # Install Snakemake
 conda install -c conda-forge -c bioconda snakemake
