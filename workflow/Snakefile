@@ -263,7 +263,7 @@ rule annotate:
         time=180,
     params:
         method_name = args['annotation']['method'],
-        annotation = args['annotation']['args'].as_cli(),
+        annotation = args['annotation']['args'].as_cli() + " --save-maps",
         sdata_path = paths.sdata_path,
     shell:
         """

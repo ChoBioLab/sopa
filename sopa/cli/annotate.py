@@ -1,4 +1,6 @@
 import ast
+from pathlib import Path
+from typing import Optional
 
 import typer
 
@@ -53,16 +55,31 @@ def tangram(
         0.5,
         help="Threshold for filtering low probability annotations",
     ),
+    save_maps: bool = typer.Option(
+        False,
+        help="Save Tangram training data to disk",
+    ),
 ):
     """Tangram segmentation (i.e., uses an annotated scRNAseq reference to transfer cell-types)"""
+    import logging
+
     import anndata
 
     from sopa._constants import SopaKeys
     from sopa.io.standardize import read_zarr_standardized
     from sopa.utils import tangram_annotate
 
+    log = logging.getLogger(__name__)
+
     sdata = read_zarr_standardized(sdata_path)
     adata_sc = anndata.io.read_h5ad(sc_reference_path)
+
+    # Set output directory if save_maps is True
+    output_dir = None
+    if save_maps:
+        output_dir = Path(sdata_path).with_suffix(".explorer")
+        log.info(f"Will save training data to {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     tangram_annotate(
         sdata,
@@ -72,6 +89,7 @@ def tangram(
         bag_size=bag_size,
         max_obs_reference=max_obs_reference,
         threshold=threshold,
+        output_dir=output_dir,
     )
     if sdata.is_backed():
         sdata.delete_element_from_disk(SopaKeys.TABLE)
