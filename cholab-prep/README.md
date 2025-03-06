@@ -27,11 +27,11 @@ conda create --name sopa2 python=3.10
 conda activate sopa2
 cd /sc/arion/projects/untreatedIBD/cache/tools/sopa
 pip install -e '.[cellpose,baysor,tangram,wsi]'
-pip uninstall numpy
-pip install numpy==2.0.2
 
 # Install Snakemake
 conda install -c conda-forge -c bioconda snakemake
+pip uninstall numpy
+pip install numpy==2.0.2
 conda deactivate
 
 ```
