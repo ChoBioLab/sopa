@@ -288,90 +288,10 @@ rule novae:
         model = config["novae"]["model"],
         zero_shot = "True" if config["novae"]["zero_shot"] else "False",
         num_workers = config["novae"]["num_workers"],
+        script = "workflow/src/run_novae.py",
     shell:
         """
-        python -c "
-import novae
-import spatialdata as sd
-from spatialdata import SpatialData
-import anndata as ad
-import os
-import numpy as np
-import pandas as pd
-
-# Define the table key constant since we're not in the sopa environment
-TABLE_KEY = 'table'
-
-# Read the SpatialData object
-sdata = sd.read_zarr('{params.sdata_path}')
-adata = sdata[TABLE_KEY]
-
-# Run Novae on the AnnData object
-model = novae.Novae.from_pretrained('{params.model}')
-
-# Compute spatial neighbors
-novae.utils.spatial_neighbors(adata, radius={params.radius})
-
-# Compute representations
-model.compute_representations(adata, zero_shot={params.zero_shot}, accelerator='cuda', num_workers={params.num_workers})
-
-# Assign domains at different levels
-model.assign_domains(adata, level=5)
-model.assign_domains(adata, level=10)
-model.assign_domains(adata, level=15)
-
-# Fix serialization issue with Novae columns
-novae_columns = [col for col in adata.obs.columns if 'novae' in col]
-print(f'Preparing {len(novae_columns)} Novae columns for serialization')
-
-for col in novae_columns:
-    if col in adata.obs.columns and adata.obs[col].isna().any():
-        print(f'Fixing NaN values in column \\\"{col}\\\"')
-
-        # For categorical columns
-        if pd.api.types.is_categorical_dtype(adata.obs[col]):
-            # Add empty string to categories if not present
-            if '' not in adata.obs[col].cat.categories:
-                adata.obs[col] = adata.obs[col].cat.add_categories([''])
-            # Replace NaN with empty string for serialization
-            adata.obs[col] = adata.obs[col].fillna('')
-        else:
-            # For non-categorical columns, convert to string and replace NaN with empty string
-            adata.obs[col] = adata.obs[col].astype(str).replace('nan', '')
-
-# Update the table in the SpatialData object
-sdata[TABLE_KEY] = adata
-
-# Use a direct approach for updating just the table
-if sdata.is_backed():
-    sdata.delete_element_from_disk(TABLE_KEY)
-    sdata.write_element(TABLE_KEY, overwrite=True)
-else:
-    # Fallback to a temporary directory approach if not backed
-    import tempfile
-    import shutil
-
-    temp_dir = tempfile.mkdtemp()
-    try:
-        # Write to temporary location
-        sdata.write(temp_dir)
-
-        # Copy only the table directory
-        src_table_dir = os.path.join(temp_dir, 'tables', 'table')
-        dst_table_dir = os.path.join('{params.sdata_path}', 'tables', 'table')
-
-        # Remove the destination directory if it exists
-        if os.path.exists(dst_table_dir):
-            shutil.rmtree(dst_table_dir)
-
-        # Copy the new table directory to the destination
-        shutil.copytree(src_table_dir, dst_table_dir)
-    finally:
-        # Clean up the temporary directory
-        shutil.rmtree(temp_dir)
-
-print('Successfully updated the table with Novae domains')
-"
+        python {params.script} {params.sdata_path} {params.model} {params.radius} {params.zero_shot} {params.num_workers}
         """
 
 rule image_write:
