@@ -1,5 +1,6 @@
 import logging
 import math
+import re
 from typing import Optional
 
 import numpy as np
@@ -11,6 +12,22 @@ from spatialdata import SpatialData
 from .._constants import SopaKeys
 
 log = logging.getLogger(__name__)
+
+
+def sanitize_path_component(name):
+    """
+    Sanitize a string to be safely used as a directory name.
+    Replaces problematic characters with underscores.
+
+    Args:
+        name: The string to sanitize
+
+    Returns:
+        A sanitized string safe for use in file paths
+    """
+    # Replace characters that are problematic in file paths
+    # Common problematic characters: /, \, :, *, ?, ", <, >, |
+    return re.sub(r'[\\/:*?"<>|]', '_', str(name))
 
 
 def preprocess_fluo(adata: AnnData) -> pd.DataFrame:
@@ -257,7 +274,8 @@ class MultiLevelAnnotation:
                     # Create cell type directory if saving
                     ct_dir = None
                     if save_training_data:
-                        ct_dir = level_dir / f"ct_{ct}"
+                        # Use sanitize_path_component to handle special characters in cell type names
+                        ct_dir = level_dir / f"ct_{sanitize_path_component(ct)}"
                         ct_dir.mkdir(exist_ok=True)
 
                     self.run_group(level, indices_sp, group.index, output_dir=ct_dir)
