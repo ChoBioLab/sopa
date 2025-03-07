@@ -288,7 +288,7 @@ rule novae:
         model = config["novae"]["model"],
         zero_shot = "True" if config["novae"]["zero_shot"] else "False",
         num_workers = config["novae"]["num_workers"],
-        script = "workflow/src/run_novae.py",
+        script = "src/run_novae.py",
     shell:
         """
         python {params.script} {params.sdata_path} {params.model} {params.radius} {params.zero_shot} {params.num_workers}

@@ -343,7 +343,8 @@ class MultiLevelAnnotation:
                     # Save as CSV
                     from pathlib import Path
                     output_path = Path(output_dir) / f"split_{i}_training_data.csv"
-                    train_df.to_csv(output_path, index=False)
+                    train_df.index.name = 'gene_name'
+                    train_df.to_csv(output_path, index=True)
                     log.info(f"Saved training data to {output_path}")
                 else:
                     log.warning("No training data found in ad_map.uns['train_genes_df']")
