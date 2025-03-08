@@ -55,10 +55,10 @@ segmentation:
         z: "z"
 
       segmentation:
-        scale: 10 # [important parameter] typical cell radius in microns
+        #scale: 10 # [important parameter] typical cell radius in microns
         scale_std: "25%" # cell radius standard deviation
         prior_segmentation_confidence: 1.0 # confidence of the cellpose confidence (float in [0, 1])
-        estimate_scale_from_centers: false
+        estimate_scale_from_centers: true
         n_clusters: 4
         iters: 500
         n_cells_init: 0
@@ -79,7 +79,7 @@ annotation:
   method: tangram
   args:
     sc_reference_path: /sc/arion/projects/untreatedIBD/cache/reference-objects/oliver-2024-subset.h5ad # path to the annotated scRNAseq reference used by Tangram
-    cell_type_key: level_2_annot # key of adata_ref.obs containing the cell-type annotation
+    cell_type_key: cell_type # key of adata_ref.obs containing the cell-type annotation
     reference_preprocessing: log1p # if your reference `adata.X` contains raw counts, then remove this parameter from the config. Else, choose "log1p" (if you have already run both `sc.pp.normalize_total` and `sc.pp.log1p` on your reference) or "normalized" (if you have already run `sc.pp.normalize_total` on your reference)
 
   # [only if you choose the simple staining-based annotation (comment out the lines below)]

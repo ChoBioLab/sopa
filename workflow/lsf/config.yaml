@@ -12,7 +12,7 @@ cluster:
 default-resources:
   threads: 8
   time: 1:00
-  queue: express
+  queue: premium
   mem_mb: 16_000
 
 restart-times: 3
