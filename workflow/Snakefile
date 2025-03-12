@@ -125,6 +125,7 @@ rule patch_segmentation_baysor:
     threads: 8
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
+        baysor_params = args["segmentation"]["baysor"].as_cli(keys=["force", "delete_cache", "recover"]),
         sdata_path = paths.sdata_path,
     resources:
         cpus_per_task=8,
@@ -137,7 +138,7 @@ rule patch_segmentation_baysor:
             module purge
         fi
 
-        sopa segmentation baysor {params.sdata_path} --patch-index {wildcards.index} {params.baysor_config}
+        sopa segmentation baysor {params.sdata_path} --patch-index {wildcards.index} {params.baysor_config} {params.baysor_params}
         """
 
 rule patch_segmentation_comseg:

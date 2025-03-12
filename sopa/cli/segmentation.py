@@ -157,7 +157,11 @@ def _run_staining_segmentation(
     **method_kwargs: int,
 ):
     from sopa.io.standardize import read_zarr_standardized
-    from sopa.segmentation import StainingSegmentation, custom_staining_based, methods
+    from sopa.segmentation import (
+        StainingSegmentation,
+        custom_staining_based,
+        methods,
+    )
 
     from .utils import _default_boundary_dir
 
@@ -242,6 +246,9 @@ def baysor(
     ),
     min_area: float = typer.Option(default=0, help="Minimum area (in micron^2) for a cell to be considered as valid"),
     scale: float = typer.Option(default=None, help="Baysor scale parameter (for config inference)"),
+    force: bool = typer.Option(default=False, help="If True, ignore failed patches and continue with the successful ones."),
+    delete_cache: bool = typer.Option(default=True, help="Whether to delete the cache after segmentation."),
+    recover: bool = typer.Option(default=False, help="If True, recover the cache from a failed segmentation, and continue."),
 ):
     """Perform Baysor segmentation. This can be done on all patches directly, or on one individual patch."""
     import sys
@@ -253,7 +260,8 @@ def baysor(
     sdata = read_zarr_standardized(sdata_path)
 
     try:
-        baysor(sdata, config=config, min_area=min_area, patch_index=patch_index, scale=scale)
+        baysor(sdata, config=config, min_area=min_area, patch_index=patch_index, scale=scale, 
+               force=force, delete_cache=delete_cache, recover=recover)
     except CalledProcessError as e:
         sys.exit(e.returncode)
 

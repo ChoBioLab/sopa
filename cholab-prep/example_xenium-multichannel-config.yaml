@@ -39,6 +39,9 @@ segmentation:
     min_area: 30 # [optional] minimum area (in microns^2) for a cell to not be filtered
     prior_shapes_key: cell_id # [optional] if prior segmentation has been performed, this is the column in the transcript dataframe that indicated the cell that contains the transcript. This doesn't need to be provided if you run cellpose with Sopa.
     unassigned_value: UNASSIGNED # [optional] if prior segmentation has been performed and if 'cell_key' above is provided, this is the value given to transcript that is not contained inside any cell
+    force: true # [optional] if True, ignore failed patches and continue with the successful ones
+    delete_cache: true # [optional] whether to delete the cache after segmentation
+    recover: false # [optional] if True, recover the cache from a failed segmentation, and continue
     config: # [this is the baysor config, as in https://github.com/kharchenkolab/Baysor]
       data:
         exclude_genes: "NegControl*,BLANK_*,antisense_*,Blank*" # genes excluded from the Baysor segmentation
