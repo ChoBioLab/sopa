@@ -107,6 +107,8 @@ rule patch_segmentation_cellpose:
     conda:
         "sopa2"
     threads: 8
+    resources:
+        time=120,
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -122,10 +124,8 @@ rule patch_segmentation_baysor:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
         "sopa2"
-    threads: 8
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
-        baysor_params = args["segmentation"]["baysor"].as_cli(keys=["force", "delete_cache", "recover"]),
         sdata_path = paths.sdata_path,
     resources:
         cpus_per_task=8,
@@ -138,7 +138,7 @@ rule patch_segmentation_baysor:
             module purge
         fi
 
-        sopa segmentation baysor {params.sdata_path} --patch-index {wildcards.index} {params.baysor_config} {params.baysor_params}
+        sopa segmentation baysor {params.sdata_path} --patch-index {wildcards.index} {params.baysor_config}
         """
 
 rule patch_segmentation_comseg:
