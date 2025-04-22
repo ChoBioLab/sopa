@@ -17,7 +17,9 @@ class WorkflowPaths:
         ### SpatialData object files
         self.data_path = self.config["data_path"]
         self.sdata_path = Path(self.config["sdata_path"])
-        self.sdata_zgroup = self.sdata_path / ".zgroup"  # trick to fix snakemake ChildIOException
+        self.sdata_zgroup = (
+            self.sdata_path / ".zgroup"
+        )  # trick to fix snakemake ChildIOException
 
         self.shapes_dir = self.sdata_path / "shapes"
         self.points_dir = self.sdata_path / "points"
@@ -45,8 +47,16 @@ class WorkflowPaths:
         ### Annotation files
         self.annotations = []
         if "annotation" in self.config:
-            key = self.config["annotation"].get("args", {}).get("cell_type_key", "cell_type")
+            key = (
+                self.config["annotation"]
+                .get("args", {})
+                .get("cell_type_key", "cell_type")
+            )
             self.annotations = self.table_dir / "table" / "obs" / key
+
+        ### Novae
+        self.smk_dir = self.sopa_cache
+        self.smk_novae = self.smk_dir / "novae"
 
     def temp_dir(self, method_name: str) -> Path:
         return self.sopa_cache / f"{method_name}_boundaries"
@@ -54,7 +64,9 @@ class WorkflowPaths:
     def segmentation_done(self, method_name: str) -> Path:
         return self.sopa_cache / f"{method_name}_boundaries_done"
 
-    def temporary_boundaries_paths(self, file_content: str, method_name: str) -> list[Path]:
+    def temporary_boundaries_paths(
+        self, file_content: str, method_name: str
+    ) -> list[Path]:
         """Compute the paths to the temporary boundary files
 
         Args:
@@ -65,12 +77,22 @@ class WorkflowPaths:
             A list of temporary boundary directories or files
         """
         if method_name in STAINING_BASED_METHODS:
-            return [self.temp_dir(method_name) / f"{i}.parquet" for i in range(int(file_content))]
+            return [
+                self.temp_dir(method_name) / f"{i}.parquet"
+                for i in range(int(file_content))
+            ]
         if method_name == "baysor":
             indices = map(int, file_content.split())
-            return [self.smk_transcripts_temp_dir / str(i) / "segmentation_counts.loom" for i in indices]
+            return [
+                self.smk_transcripts_temp_dir / str(i) / "segmentation_counts.loom"
+                for i in indices
+            ]
         if method_name == "comseg":
             indices = map(int, file_content.split())
             COMSEG_FILES = ["segmentation_polygons.json", "segmentation_counts.h5ad"]
-            return [self.smk_transcripts_temp_dir / str(i) / file for i in indices for file in COMSEG_FILES]
+            return [
+                self.smk_transcripts_temp_dir / str(i) / file
+                for i in indices
+                for file in COMSEG_FILES
+            ]
         raise ValueError(f"Unknown method name {method_name}")

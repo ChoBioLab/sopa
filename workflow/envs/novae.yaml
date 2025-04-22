@@ -1,0 +1,5 @@
+name: novae
+channels:
+  - conda-forge
+  - defaults
+prefix: /sc/arion/projects/untreatedIBD/ctastad/conda/envs/novae

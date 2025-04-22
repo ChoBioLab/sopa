@@ -38,7 +38,10 @@ rule to_spatialdata:
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
+    resources:
+        mem_mb=128_000,
     params:
         reader = args['read'].as_cli(),
         data_path = paths.data_path,
@@ -54,7 +57,8 @@ rule tissue_segmentation:
     output:
         touch(paths.segmentation_done("tissue")),
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -74,7 +78,8 @@ checkpoint patchify_image:
         patchify_image = args["patchify"].as_cli(contains="pixel"),
         sdata_path = paths.sdata_path,
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
     shell:
         """
         sopa patchify image {params.sdata_path} {params.patchify_image}
@@ -92,7 +97,10 @@ checkpoint patchify_transcripts:
         patchify_transcripts = args.patchify_transcripts(),
         sdata_path = paths.sdata_path,
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
+    resources:
+        mem_mb=32_000,
     shell:
         """
         sopa patchify transcripts {params.sdata_path} {params.patchify_transcripts}
@@ -104,7 +112,10 @@ rule aggregate:
     output:
         touch(paths.smk_aggregation),
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
+    resources:
+        mem_mb=64_000,
     params:
         aggregate = args["aggregate"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -119,10 +130,12 @@ rule annotate:
     output:
         directory(paths.annotations),
     conda:
-        "sopa"
+        "sopa204"
+    threads: 2
     resources:
-        partition="gpgpuq" if args['annotation']['method'] == "tangram" else "shortq",
-        gpu="a100:1" if args['annotation']['method'] == "tangram" else 0,
+        mem_mb=64_000,
+        queue="gpu -R 'h100nvl' -gpu 'num=1'",
+        time=180,
     params:
         method_name = args['annotation']['method'],
         annotation = args['annotation']['args'].as_cli(),
@@ -132,13 +145,40 @@ rule annotate:
         sopa annotate {params.method_name} {params.sdata_path} {params.annotation}
         """
 
+rule novae:
+    input:
+        paths.annotations if args.annotate else paths.smk_aggregation,
+    output:
+        touch(paths.smk_novae),
+    conda:
+        "novae"
+    threads: 16
+    resources:
+        mem_mb=64_000,
+        queue="gpu -R 'h100nvl' -gpu 'num=1'",
+        time=45,
+    params:
+        sdata_path = paths.sdata_path,
+        radius = config["novae"]["radius"],
+        model = config["novae"]["model"],
+        zero_shot = "True" if config["novae"]["zero_shot"] else "False",
+        num_workers = config["novae"]["num_workers"],
+        script = "src/run_novae.py",
+    shell:
+        """
+        python {params.script} {params.sdata_path} {params.model} {params.radius} {params.zero_shot} {params.num_workers}
+        """
+
 rule explorer_raw:
     input:
         paths.sdata_zgroup,
     output:
         touch(paths.smk_explorer_raw),
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
+    resources:
+        mem_mb=64_000,
     params:
         explorer = args["explorer"].as_cli(keys=['lazy', 'ram_threshold_gb', 'pixel_size', 'pixelsize']),
         sdata_path = paths.sdata_path,
@@ -171,13 +211,17 @@ rule report:
         args.segmentation_boundaries(),
         paths.smk_aggregation,
         paths.annotations if args.annotate else [],
+        paths.smk_novae if args.novae else [],
     output:
         paths.report,
     params:
         sdata_path = paths.sdata_path,
         report = paths.report,
     conda:
-        "sopa"
+        "sopa204"
+    threads: 8
+    resources:
+        mem_mb=32_000,
     shell:
         """
         sopa report {params.sdata_path} {params.report}

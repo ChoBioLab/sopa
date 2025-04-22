@@ -1,4 +1,5 @@
 # Misc
+*.sif
 workflow/.snakemake
 workflow/logs/*
 !workflow/logs/.gitkeep

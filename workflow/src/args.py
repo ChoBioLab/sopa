@@ -21,7 +21,12 @@ class Args:
                 break
 
         # whether to run annotation
-        self.annotate = "annotation" in self.config and "method" in self.config["annotation"]
+        self.annotate = (
+            "annotation" in self.config and "method" in self.config["annotation"]
+        )
+
+        # whether to run novae
+        self.novae = "novae" in self.config
 
     def use(self, method_name: str) -> bool:
         return method_name in self.config["segmentation"]
@@ -34,15 +39,24 @@ class Args:
 
     def resolve_transcripts(self) -> str:
         """Arguments for `sopa resolve [baysor/comseg]`"""
-        if self.transcript_based_method is None or self.transcript_based_method == "proseg":
+        if (
+            self.transcript_based_method is None
+            or self.transcript_based_method == "proseg"
+        ):
             return ""
 
         if self.transcript_based_method == "baysor":
-            gene_column = self.config["segmentation"]["baysor"]["config"]["data"]["gene"]
+            gene_column = self.config["segmentation"]["baysor"]["config"]["data"][
+                "gene"
+            ]
         elif self.transcript_based_method == "comseg":
             gene_column = self.config["segmentation"]["comseg"]["config"]["gene_column"]
 
-        min_area = self.config["segmentation"].get(self.transcript_based_method, {}).get("min_area", 0)
+        min_area = (
+            self.config["segmentation"]
+            .get(self.transcript_based_method, {})
+            .get("min_area", 0)
+        )
         return f"--gene-column {gene_column} --min-area {min_area}"
 
     def patchify_transcripts(self) -> str:
@@ -70,7 +84,9 @@ class Args:
         Returns:
             A string that can be used as arguments/options for the Sopa CLI.
         """
-        assert (keys is None) or (contains is None), "Provide either 'keys' or 'contains', but not both"
+        assert (keys is None) or (
+            contains is None
+        ), "Provide either 'keys' or 'contains', but not both"
 
         if keys is None and contains is None:
             return str(self)
@@ -94,7 +110,9 @@ class Args:
 
         For instance, {"x": 2, "y": False} will be converted to "--x 2 --no-y"
         """
-        return " ".join(res for item in self.config.items() for res in _stringify_item(*item))
+        return " ".join(
+            res for item in self.config.items() for res in _stringify_item(*item)
+        )
 
     def __getitem__(self, name: str) -> Args | bool | str | list:
         sub_config = self.config.get(name, {})
