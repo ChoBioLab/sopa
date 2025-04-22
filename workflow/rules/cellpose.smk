@@ -8,7 +8,9 @@ rule patch_segmentation_cellpose:
         "sopa204"
     threads: 8
     resources:
-        time=120,
+        mem_mb=64_000,
+        queue="gpu -R 'h100nvl' -gpu 'num=1'",
+        time=45,
     params:
         cellpose = args["segmentation"]["cellpose"].as_cli(),
         sdata_path = paths.sdata_path,
