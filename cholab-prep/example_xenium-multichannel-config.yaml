@@ -17,32 +17,35 @@ patchify:
   # patch_width_microns: 1000
   # patch_overlap_microns: 20
 
+  # [only if running proseg]
+  patch_width_microns: -1 # only one patch
+  patch_overlap_microns: 0
+
 segmentation:
   # [optional] if you want to segment the tissue before cell-segmentation
   # tissue:
   #   mode: staining # 'saturation' (for H&E) or 'staining' (for fluorescence)
-  #
+
   # [only if running cellpose]
   cellpose:
     diameter: 30 # [important parameter] typical size of a cell, in pixels. This depends on the technology resolution (see our config files per technology: https://github.com/gustaveroussy/sopa/tree/master/workflow/config)
-    channels: ["18S", "DAPI"] # list of one or two channel(s) used for segmentation. If two channels, provide a nuclear staining, and then a cytoplasm staining
+    channels: [ "18S", "DAPI" ] # list of one or two channel(s) used for segmentation. If two channels, provide a nuclear staining, and then a cytoplasm staining
     flow_threshold: 0.4 # see cellpose parameters
     cellprob_threshold: 0.0 # see cellpose parameters
-  
+
     model_type: "pretrained_model" # [optional] name of the cellpose model to be used. If you have a custom model, use the "pretrained_model" argument instead, and give the path to your model
     pretrained_model: "/sc/arion/projects/untreatedIBD/cache/models/cellpose/tissuenet_cp3"
-  # min_area: 1000 # [optional] minimum area (in pixels^2) for a cell to not be filtered
+    # min_area: 1000 # [optional] minimum area (in pixels^2) for a cell to not be filtered
     clip_limit: 0.2 # [optional] value used to increase the contrast of the image. 0 means no change, 1 means high contrast change (see skimage.exposure.equalize_adapthist).
-  # gaussian_sigma: 1 # [optional] sigma used for gaussian smoothing. This can improve segmentation for highly-pixelated images
+    # gaussian_sigma: 1 # [optional] sigma used for gaussian smoothing. This can improve segmentation for highly-pixelated images
     method_kwargs:
       cellpose_model_kwargs:
         gpu: true
 
   # [only if running proseg]
   proseg:
-    # prior_shapes_key: cell_id # this allows to use the prior segmentation performed by 10X Genomics
+    prior_shapes_key: cellpose_boundaries # this allows to use the prior segmentation performed by 10X Genomics
     unassigned_value: UNASSIGNED
-
   # [only if running baysor]
   #  baysor:
   #    min_area: 30 # [optional] minimum area (in microns^2) for a cell to not be filtered
@@ -90,7 +93,6 @@ annotation:
     sc_reference_path: /sc/arion/projects/untreatedIBD/cache/reference-objects/oliver-2024-subset.h5ad # path to the annotated scRNAseq reference used by Tangram
     cell_type_key: cell_type # key of adata_ref.obs containing the cell-type annotation
     reference_preprocessing: log1p # if your reference `adata.X` contains raw counts, then remove this parameter from the config. Else, choose "log1p" (if you have already run both `sc.pp.normalize_total` and `sc.pp.log1p` on your reference) or "normalized" (if you have already run `sc.pp.normalize_total` on your reference)
-
   # [only if you choose the simple staining-based annotation (comment out the lines below)]
   # method: fluorescence
   # args:
@@ -108,7 +110,8 @@ novae:
   zero_shot: True
   num_workers: 16
 
-explorer: # parameters related to the conversion to the Xenium Explorer (Sopa's visualizer)
+explorer:
+  # parameters related to the conversion to the Xenium Explorer (Sopa's visualizer)
   gene_column: "feature_name" # [optional] name of the column of the transcript dataframe indicating the genes names. Provide this if you want to see transcripts on the explorer
   ram_threshold_gb: 4 # [optional] images below this RAM threshold will be loaded in memory during conversion. It can accelerate image writing
   pixel_size: 0.2125 # [optional] this is the number of microns in a pixel for the technology used (see the config of your technology of interest)
