@@ -106,9 +106,9 @@ rule patch_segmentation_cellpose:
         paths.smk_cellpose_temp_dir / "{index}.parquet",
     conda:
         "sopa2"
-    threads: 8
+    threads: 2
     resources:
-        mem_mb=64_000,
+        mem_mb=32_000,
         queue="gpu -R 'h100nvl' -gpu 'num=1'",
         time=45,
     params:
