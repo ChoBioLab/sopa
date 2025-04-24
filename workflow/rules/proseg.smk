@@ -6,7 +6,7 @@ rule patch_segmentation_proseg:
         touch(paths.smk_table),
     conda:
         "sopa204"
-    threads: 8
+    threads: 16
     params:
         proseg_config = args["segmentation"]["proseg"].as_cli(keys=["command_line_suffix"]),
         sdata_path = paths.sdata_path,
