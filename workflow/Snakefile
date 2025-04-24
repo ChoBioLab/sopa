@@ -196,7 +196,7 @@ rule explorer:
     output:
         paths.explorer_experiment,
     conda:
-        "sopa"
+        "sopa204"
     params:
         explorer = args["explorer"].as_cli(),
         sdata_path = paths.sdata_path,
