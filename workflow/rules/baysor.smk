@@ -4,7 +4,7 @@ rule patch_segmentation_baysor:
     output:
         paths.smk_transcripts_temp_dir / "{index}" / "segmentation_counts.loom",
     conda:
-        "sopa204"
+        "sopa206"
     params:
         baysor_config = args["segmentation"]["baysor"].as_cli(keys=["config"]),
         sdata_path = paths.sdata_path,
@@ -35,7 +35,7 @@ rule resolve_baysor:
         touch(paths.segmentation_done("baysor")),
         touch(paths.smk_table),
     conda:
-        "sopa204"
+        "sopa206"
     params:
         resolve = args.resolve_transcripts(),
         sdata_path = paths.sdata_path,

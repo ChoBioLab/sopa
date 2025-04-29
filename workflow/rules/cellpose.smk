@@ -5,7 +5,7 @@ rule patch_segmentation_cellpose:
     output:
         paths.temp_dir("cellpose") / "{index}.parquet",
     conda:
-        "sopa204"
+        "sopa206"
     threads: 1
     resources:
         mem_mb=32_000,
@@ -26,7 +26,7 @@ rule resolve_cellpose:
     output:
         touch(paths.segmentation_done("cellpose")),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     params:
         sdata_path = paths.sdata_path,

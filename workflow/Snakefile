@@ -38,7 +38,7 @@ rule to_spatialdata:
     output:
         paths.sdata_zgroup if paths.data_path else [],
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     resources:
         mem_mb=128_000,
@@ -57,7 +57,7 @@ rule tissue_segmentation:
     output:
         touch(paths.segmentation_done("tissue")),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     params:
         tissue_segmentation = args["segmentation"]["tissue"].as_cli(),
@@ -78,7 +78,7 @@ checkpoint patchify_image:
         patchify_image = args["patchify"].as_cli(contains="pixel"),
         sdata_path = paths.sdata_path,
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     shell:
         """
@@ -97,7 +97,7 @@ checkpoint patchify_transcripts:
         patchify_transcripts = args.patchify_transcripts(),
         sdata_path = paths.sdata_path,
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     resources:
         mem_mb=32_000,
@@ -112,7 +112,7 @@ rule aggregate:
     output:
         touch(paths.smk_aggregation),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     resources:
         mem_mb=64_000,
@@ -130,7 +130,7 @@ rule annotate:
     output:
         directory(paths.annotations),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 2
     resources:
         mem_mb=64_000,
@@ -175,7 +175,7 @@ rule explorer_raw:
     output:
         touch(paths.smk_explorer_raw),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     resources:
         mem_mb=64_000,
@@ -196,7 +196,7 @@ rule explorer:
     output:
         paths.explorer_experiment,
     conda:
-        "sopa204"
+        "sopa206"
     params:
         explorer = args["explorer"].as_cli(),
         sdata_path = paths.sdata_path,
@@ -218,7 +218,7 @@ rule report:
         sdata_path = paths.sdata_path,
         report = paths.report,
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     resources:
         mem_mb=32_000,

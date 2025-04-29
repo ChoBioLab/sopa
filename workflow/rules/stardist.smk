@@ -5,7 +5,7 @@ rule patch_segmentation_stardist:
     output:
         paths.temp_dir("stardist") / "{index}.parquet",
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     params:
         stardist = args["segmentation"]["stardist"].as_cli(),
@@ -22,7 +22,7 @@ rule resolve_stardist:
     output:
         touch(paths.segmentation_done("stardist")),
     conda:
-        "sopa204"
+        "sopa206"
     threads: 8
     params:
         sdata_path = paths.sdata_path,
