@@ -6,7 +6,7 @@ rule patch_segmentation_cellpose:
         paths.temp_dir("cellpose") / "{index}.parquet",
     conda:
         "sopa204"
-    threads: 2
+    threads: 1
     resources:
         mem_mb=32_000,
         queue="gpu -R 'h100nvl' -gpu 'num=1'",
