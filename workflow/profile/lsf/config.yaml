@@ -1,17 +1,46 @@
-# Warning: this profile is still experimental.
-
 executor: lsf
 default-resources:
-    mem_mb: 8_000 # default rules memory in MB (you can keep this value)
+    mem_mb: 8_000
     gpu: 0
+    lsf_project: acc_untreatedIBD
+    lsf_queue: premium
+    runtime: 60
 
-# other options (you can keep the default values)
-restart-times: 0
-max-jobs-per-second: 100
-max-status-checks-per-second: 1
-local-cores: 1
-latency-wait: 60
-jobs: 50
+set-resources:
+    to_spatialdata:
+        mem_mb: 128_000
+    image_write:
+        mem_mb: 64_000
+    patchify_transcripts:
+        mem_mb: 32_000
+    patch_segmentation_cellpose:
+        lsf_queue: gpu
+        mem_mb: 32_000
+        runtime: 45
+    annotate:
+        lsf_queue: gpu
+        mem_mb: 64_000
+        runtime: 180
+    novae:
+        lsf_queue: gpu
+        mem_mb: 64_000
+        runtime: 45
+    patch_segmentation_baysor:
+        mem_mb: 32_000
+        cpus_per_task: 2
+    resolve_baysor:
+        mem_mb: 128_000
+    aggregate:
+        mem_mb: 64_000
+    report:
+        mem_mb: 32_000
+    explorer:
+        mem_mb: 256_000
+
+restart-times: 3
+max-jobs-per-second: 10
+jobs: 20000
+latency-wait: 2
 keep-going: True
 rerun-incomplete: True
 printshellcmds: True
